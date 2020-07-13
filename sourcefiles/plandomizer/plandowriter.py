@@ -15,9 +15,12 @@ import ipswriter as bigpatches
 import logicwriter
 import patcher as patches
 import shopwriter as shops
-import specialwriter as hardcoded_items
+import specialwriter
 import techwriter as tech_order
-import treasurewriter as treasures
+import treasurewriter
+
+import keyitems
+import treasures
 
 
 #  
@@ -61,12 +64,14 @@ def plandomize(datastore):
   handleCharacters(datastore)
   handleKeyItemsAndBossScaling(datastore)
   handleTreasures(datastore)
-  handlEnemyLoot(datastore)
+  handleEnemyLoot(datastore)
   handleShops(datastore)
   handleTechs(datastore)
   applyMiscFixes(datastore)
 
-
+#
+# Read in the list of enemy names used to generate a random seed.
+#
 def read_names():
   p = open("../names.txt","r")
   names = p.readline()
@@ -78,9 +83,9 @@ def read_names():
 #
 # Function to handle enemy loot
 #  
-def handlEnemyLoot(datastore):
+def handleEnemyLoot(datastore):
   outfile = datastore.outputFile
-  enemystuff.randomize_enemy_stuff(outfile)
+  enemystuff.randomize_enemy_stuff(outfile, datastore.difficulty.get())
   
 
 #
@@ -102,10 +107,98 @@ def handleTechs(datastore):
 # Function to handle treasures
 #
 def handleTreasures(datastore):
-  # TODO: full rando for now, need to implement plando
   outfile = datastore.outputFile
-  treasures.randomize_treasures(outfile)
-  hardcoded_items.randomize_hardcoded_items(outfile)
+  romFile = open(outfile, "r+b")
+  
+  # read in the treasure file
+  treasureMap = {}
+  # TODO add error handling for a blank or unreadable file
+  with open(datastore.chestFilePath.get()) as file:
+    for line in file.readlines():
+      line = line.strip()
+      if line == "" or line.startswith("#"):
+        continue
+      temp = line.split(":")
+      treasureLocation = temp[0]
+      treasureName = temp[1]
+      if treasureName != "":
+        if  treasureName in treasures.ItemNameToCodeMap.keys():
+          treasureMap[treasureLocation] = treasureName
+        else:
+          print("Skipping Invalid Treasure: " + treasureName + " at location: " + treasureLocation)
+  
+  # Read in the sealed treasures file
+  sealedChestMap = {}
+  with open(datastore.sealedChestFilePath.get()) as file:
+    for line in file.readlines():
+      line = line.strip()
+      if line == "" or line.startswith("#"):
+        continue
+      temp = line.split(":")
+      chestLoc = temp[0]
+      treasureName = temp[1]
+      if treasureName in treasures.ItemNameToCodeMap.keys():
+        sealedChestMap[chestLoc] = treasureName
+      else:
+        print("Skipping Invalid Treasure: " + treasureName + " at location: " + chestLoc) 
+  
+  # Loop through the full list of treasure pointers in the baseline randomizer
+  # For each pointer, check if it's part of the treasure list we read in.
+  # If it is, look up the user defined treasure and set it.  If the user didn't
+  # define a treasure for that spot, use the baseline rando functionality to 
+  # choose a treasure for us.
+  for pointer in treasurewriter.allpointers:
+    locationName = treasures.getNameFromPointer(pointer)
+    treasureCode = 0
+    if locationName == "" or not locationName in treasureMap.keys():
+      # This chest isn't in the plando treasure list or
+      # the user didn't specify a treasure for this chest
+      treasureCode = treasurewriter.choose_item(pointer, datastore.difficulty.get())
+    else:
+      # The user specified a treasure for this chest
+      treasureName = treasureMap[locationName]
+      treasureCode = treasures.ItemNameToCodeMap[treasureName]
+    
+    # write the treasure
+    romFile.seek(pointer-3)
+    romFile.write(st.pack("B",0x00))
+    romFile.seek(pointer)
+    romFile.write(st.pack("B",treasureCode))
+  
+
+  # Sealed chests each have 2 pointers.  In the base rando code all pointers
+  # are stored sequentially, with each pair making up a sealed chest.
+  # Convert the list into a list of tuples.
+  it = iter(specialwriter.sealed_pointers)
+  pointer_pairs = zip(it, it)
+  
+  # Loop over the list of tuples, each one represents a chest
+  for pointers in pointer_pairs:
+    locationName = treasures.getSealedChestNameFromPointer(pointers[0])
+    treasureCode = 0
+    if locationName == "" or not locationName in sealedChestMap.keys():
+      # This chest isn't in the sealed treasure list or
+      # the user didn't specify a treasure for this chest
+      treasureCode = rand.choice(specialwriter.sealed_treasures)
+      treasureName = str(treasureCode)
+    else:
+      treasureName = sealedChestMap[locationName]
+      treasureCode = treasures.ItemNameToCodeMap[treasureName]
+  
+    # write the treasure to the chest's memory locations
+    romFile.seek(pointers[0])
+    romFile.write(st.pack("B", treasureCode))
+    romFile.seek(pointers[1])
+    romFile.write(st.pack("B", treasureCode))
+ 
+  # TODO:
+  #  1) Taban's trade items
+  #  2) Pre-history trading hut items
+  #  3) Rocks
+  #  4) Jerky trade item
+  romFile.close()    
+  
+ 
   
 #
 # Function to apply patches for the more straightforward flags
@@ -128,9 +221,9 @@ def applyFlagPatches(datastore):
     patches.patch_file("patches/zeal_end_boss.txt",outfile)
   if datastore.flags['l'].get() == 1: # lost worlds
     bigpatches.write_patch("patches/lost.ips",outfile)  
-  if datastore.flags['p'].get == 1 and datastore.flags['l'].get() != 1:
-    # Fast pendant charge
+  elif datastore.flags['p'].get() == 1: # Fast pendant charge
     patches.patch_file("patches/fast_charge_pendant.txt",outfile)
+    print("Fast charge patch")
 
 
 #
@@ -153,20 +246,29 @@ def applyMiscFixes(datastore):
 #
 # Handle placing key items.
 #
+# TODO - Randomly place key items that user didn't choose a spot for
+#        Handle lost worlds vs regular placement
+#        Handle boss scaling
 def handleKeyItemsAndBossScaling(datastore):
-  # TODO: implement key item plando
   outfile = datastore.outputFile
   locked_chars = ""
   if datastore.flags['c'].get() == 1:
     locked_chars = "Y"
-    
-  if datastore.flags['l'].get() == 1:
-    keyitems = logicwriter.randomize_lost_worlds_keys(datastore.charToLocMap,outfile)
-  else:
-    keyitems = logicwriter.randomize_keys(datastore.charToLocMap,outfile,locked_chars)
-  
-  if datastore.flags['b'].get() == 1:
-    boss_scale.scale_bosses(datastore.charToLocMap,keyitems,locked_chars,outfile)
+
+  keyItemManager = keyitems.KeyItemManager()
+  locationManager = keyitems.LocationManager()
+  for locname, itemname in datastore.itemLocVars.items():
+    if itemname.get() != "":
+      # User chose an item for this spot, place it
+      keyItem = keyItemManager.getKeyItem(itemname.get())
+      location = locationManager.getLocation(locname)
+      f = open(outfile, "r+b")
+      f.seek(location.memloc1)
+      f.write(st.pack("B", keyItem.itemCode))
+      f.seek(location.memloc2)
+      f.write(st.pack("B", keyItem.itemCode))
+      f.close()
+
   
   
 #
@@ -231,15 +333,4 @@ def handleCharacters(datastore):
   
   # Finally, write the characters to the ROM  
   cw.write_chars(f, charToLocMap, locked_chars, lost_worlds, datastore.outputFile)
-
-
-
-  
-  
-
-
-
-
-
-
 

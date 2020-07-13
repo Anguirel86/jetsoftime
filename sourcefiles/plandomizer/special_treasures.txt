@@ -1,0 +1,36 @@
+#Jerky Trade:
+#Taban Gift Weapon:
+#Taban Gift Helm:
+
+# Prehistory trades
+#Prehistory Ranged Weapon:
+#Prehistory Accessory:
+#Prehistory Tab:
+
+
+# Sealed chests Middle Ages
+Truce Inn 600AD:Wood Sword
+Porre Elder's House 1:Iron Blade
+Porre Elder's House 2:SteelSaber
+Guardia Castle 600AD:Lode Sword
+Magic Cave:Red Katana
+Guardia Forest 600AD:Flint Edge
+
+
+# Sealed Chests Present
+Truce Inn 1000AD:Dark Saber
+Forest Ruins 1:Aeon Blade - Got a Nova Armor
+Forest Ruins 2:Demon Edge - Got a Brave Sword
+Porre Mayor's House 1:AlloyBlade
+Porre Mayor's House 2:Star Sword
+Guardia Forest 1000AD:VedicBlade
+Guardia Castle 1000AD:Kali Blade
+Heckran's Cave 1:Shiva Edge
+Heckran's Cave 2:Bolt Sword
+Hero's Grave 1:Slasher
+Hero's Grave 2:Bronze Bow
+Hero's Grave 3:Iron Bow
+
+
+
+

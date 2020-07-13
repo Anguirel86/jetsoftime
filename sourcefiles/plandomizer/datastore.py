@@ -6,12 +6,21 @@ import tkinter as tk
 # the data model for the application.
 #
 class DataStore:
+
+  #
+  # charLocVars is a mapping of character names to locations
+  # itemLocVars is a mapping of location name to item name
+  # The keys are strings, the values are tk StringVar variables.
+  #
   def __init__(self):
     self.characters = ['Crono', 'Marle', 'Lucca', 'Frog', 'Robo', 'Ayla', 'Magus']
     self.charLocVars = {}
+    self.itemLocVars = {}
     self.flags = {}
     self.outputFile = None
     self.inputFile = None
+    self.chestFilePath = None
+    self.sealedChestFilepath = None
     
     
   #
@@ -22,3 +31,15 @@ class DataStore:
   def validate(self):
     # TODO: Actually implement this
     return True  
+    
+  #
+  # Save the datastore to a file
+  #
+  def saveDatastore(self, filename):
+    return True
+    
+  #
+  # Load the datastore from a file
+  #
+  def loadDatastore(self, filename):
+    return True

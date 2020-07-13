@@ -1,0 +1,255 @@
+# 1000 AD
+Truce Mayor's House F1:
+Truce Mayor's House F2:
+King's Tower(Present):
+King's Room (Present):
+Queen's Tower(Present):
+Queen's Room (Present):
+Guardia Basement 1:
+Guardia Basement 2:
+Guardia Basement 3:
+Guardia Treasury 1:
+Guardia Treasury 2:
+Guardia Treasury 3:
+Guardia Court Tower:
+Prison Tower:
+Prison Torture Chamber:
+Guardia Prison 1:
+Guardia Prison 2:
+Guardia Prison 3:
+Guardia Prison 4:
+Guardia Prison 5:
+Guardia Prison 6:
+Guardia Prison 7:
+Guardia Prison 8:
+Prison Execution Cell:
+Forest Ruins:
+Heckran Cave Sidetrack:
+Heckran Cave Entrance:
+Heckran Cave 1:
+Heckran Cave 2:
+Porre Mayor's House F2:
+Giant's Claw Kino's Cell:
+Giant's Claw Traps:
+
+# 600 AD
+Truce Canyon 1:
+Truce Canyon 2:
+Queen's Tower(Middle Ages):
+Queen's Room(Middle Ages):
+King's Tower(Middle Ages):
+King's Room(Middle Ages):
+Royal Kitchen:MegaElixer
+Magus' Castle Clone Hall:
+Manoria Cathedral 1:Valkerye
+Manoria Cathedral 2:WonderShot
+Manoria Cathedral 3:PrismSpecs
+Cathedral Interior 1:PrismSpecs
+Cathedral Interior 2:MegaElixer
+Cathedral Interior 3:MegaElixer
+Cathedral Interior 4:MegaElixer
+Manoria Shrine Sideroom 1:PrismDress
+Manoria Shrine Sideroom 2:PrismDress
+Manoria Bromide Room 1:Prism Helm
+Manoria Bromide Room 2:Prism Helm
+Manoria Bromide Room 3:Prism Helm
+Manoria Magus Shrine 1:MegaElixer
+Manoria Magus Shrine 2:MegaElixer
+Yakra's Room:Gold Stud
+Cursed Woods 1:
+Cursed Woods 2:
+Frog's Burrow:
+Denadoro Mts Screen 2 1:
+Denadoro Mts Screen 2 2:
+Denadoro Mts Screen 2 3:
+Denadoro Mts Final 1:
+Denadoro Mts Final 2:
+Denadoro Mts Final 3:
+Denadoro Mts Waterfall Top 1:
+Denadoro Mts Waterfall Top 2:
+Denadoro Mts Waterfall Top 3:
+Denadoro Mts Waterfall Top 4:
+Denadoro Mts Waterfall Top 5:
+Denadoro Mts Entrance 1:
+Denadoro Mts Entrance 2:
+Denadoro Mts Screen 3 1:
+Denadoro Mts Screen 3 2:
+Denadoro Mts Screen 3 3:
+Denadoro Mts Screen 3 4:
+Denadoro Mts Ambush:
+Denadoro Mts Save Point:
+Fiona's House 1:Rainbow
+Fiona's House 2:Moon Armor
+Sunken Desert 1:MegaElixer
+Sunken Desert 2:MegaElixer
+Sunken Desert 3:MegaElixer
+Sunken Desert 4:MegaElixer
+Retinite Lair 1:MegaElixer
+Retinite Lair 2:MegaElixer
+Retinite Lair 3:MegaElixer
+Retinite Lair 4:MegaElixer
+Retinite Lair 5:MegaElixer
+Retinite Lair 6:MegaElixer
+Retinite Lair 7:MegaElixer
+Magus' Castle Guillotines 1:
+Magus' Castle Guillotines 2:
+Slash's Room 1:
+Slash's Room 2:
+Magus' Castle Gauntlet:
+Magus' Castle Children:
+Magus' Castle Throneroom 1:
+Magus' Castle Throneroom 2:
+Magus' Castle Gauntlet 2:
+Ozzie's Fort Guillotines 1:
+Ozzie's Fort Guillotines 2:
+Ozzie's Fort Guillotines 3:
+Ozzie's Fort Guillotines 4:
+Ozzie's Fort Final 1:
+Ozzie's Fort Final 2:
+Giant's Claw Caves 1:
+Giant's Claw Caves 2:
+Giant's Claw Caves 3:
+Giant's Claw Caves 4:
+Giant's Claw Caves 5:
+Giant's Claw Caves 6:
+Magus' Castle Ritual Hall:
+Magus' Castle Ambush:
+Magus' Castle Trap Room 1:
+Magus' Castle Trap Room 2:
+Magus' Castle Trap Room 3:
+Magus' Castle Trap Room 4:
+
+# 2300 AD
+Bangor Dome Seal 1:
+Bangor Dome Seal 2:
+Bangor Dome Seal 3:
+Trann Dome Seal 1:
+Trann Dome Seal 2:
+Lab 16 1:
+Lab 16 2:
+Lab 16 3:
+Lab 16 4:
+Arris Dome:
+Arris Dome Food Store:
+Arris Dome Seal 1:
+Arris Dome Seal 2:
+Arris Dome Seal 3:
+Arris Dome Seal 4:
+Lab 32 1:
+Lab 32 2:
+Factory Ruins Left 1:
+Factory Ruins Left 2:
+Factory Ruins Left 3:
+Factory Ruins Left 4:
+Factory Ruins Left 5:
+Factory Ruins Left 6:
+Factory Ruins Right 1:
+Factory Ruins Right 2:
+Factory Ruins Right 3:
+Factory Ruins Right 4:
+Factory Ruins Right 5:
+Factory Ruins Right 6:
+Factory Ruins Right 7:
+Factory Ruins Right 8:
+Sewers 1:
+Sewers 2:
+Sewers 3:
+Death Peak 1:
+Death Peak 2:
+Death Peak 3:
+Death Peak 4:
+Geno Dome 1st Floor 1:
+Geno Dome 1st Floor 2:
+Geno Dome 1st Floor 3:
+Geno Dome 1st Floor 4:
+Geno Dome Room 1:
+Geno Dome Room 2:
+Proto 4 Chamber 1:
+Proto 4 Chamber 2:
+Death Peak Krakkers:
+Death Peak Cave 1:
+Death Peak Cave 2:
+Death Peak Cave 3:
+Geno Dome 2nd Floor 1:
+Geno Dome 2nd Floor 2:
+Geno Dome 2nd Floor 3:
+Geno Dome 2nd Floor 4:
+
+# 65 Million BC
+Mystic Mtn Stream:
+Forest Maze 1:
+Forest Maze 2:
+Forest Maze 3:
+Forest Maze 4:
+Forest Maze 5:
+Forest Maze 6:
+Forest Maze 7:
+Forest Maze 8:
+Forest Maze 9:
+Reptite Lair Secret Rooms 1:
+Reptite Lair Secret Rooms 2:
+Reptite Lair Secret Rooms 3:
+Reptite Lair Secret Rooms 4:
+Reptite Lair Secret Rooms 5:
+Reptite Lair Secret Rooms 6:
+Reptite Lair Reptites 1:
+Reptite Lair Reptites 2:
+Dactyl Nest 1:
+Dactyl Nest 2:
+Dactyl Nest 3:
+Azala's Throneroom 1:
+Azala's Throneroom 2:
+Tyrano Lair Rooms 1:
+Tyrano Lair Rooms 2:
+Tyrano Lair Teleporters 1:
+Tyrano Lair Teleporters 2:
+Tyrano Lair Teleporters 3:
+Tyrano Lair Teleporters 4:
+
+# Black Omen
+Black Omen 1st Hall 1:
+Black Omen 1st Hall 2:
+Black Omen 2nd Hall:
+Black Omen Treasury 1:
+Black Omen Treasury 2:
+Black Omen Treasury 3:
+Black Omen Treasury 4:
+Black Omen Treasury 5:
+Black Omen Treasury 6:
+Black Omen Inner Rooms 1:
+Black Omen Inner Rooms 2:
+Black Omen Inner Rooms 3:
+Black Omen Inner Rooms 4:
+Black Omen Inner Rooms 5:
+Black Omen Inner Rooms 6:
+Black Omen Inner Rooms 7:
+Black Omen Inner Rooms 8:
+Terra Mutant's Room 1:
+Terra Mutant's Room 2:
+Terra Mutant's Room 3:
+
+# 12000 BC
+Mt Woe 2nd Screen 1:
+Mt Woe 2nd Screen 2:
+Mt Woe 2nd Screen 3:
+Mt Woe 2nd Screen 4:
+Mt Woe 2nd Screen 5:
+Mt Woe 3rd Screen 1:
+Mt Woe 3rd Screen 2:
+Mt Woe 3rd Screen 3:
+Mt Woe 3rd Screen 4:
+Mt Woe 3rd Screen 5:
+Mt Woe 1st Screen:
+Mt Woe Final 1:
+Mt Woe Final 2:
+
+# Ocean Palace
+Ocean Palace 1st Hall 1:
+Ocean Palace 1st Hall 2:
+Ocean Palace Rooms 1:
+Ocean Palace Rooms 2:
+Ocean Palace 2nd Hall 1:
+Ocean Palace 2nd Hall 2:
+Ocean Palace 2nd Hall 3:
+Ocean Palace 2nd Hall 4:
+Ocean Palace Final:

@@ -10,7 +10,8 @@ class KeyItem:
 	 
 	 
 #
-# This class represents a key item location
+# This class represents a key item location, including the item 
+# name and its memory addresses.
 #
 class Location:
   def __init__(self, name, memloc1, memloc2):
@@ -21,7 +22,7 @@ class Location:
 	 
 class KeyItemManager:
   def __init__(self):
-    resetKeyItems(self)
+    self.resetKeyItems()
 	 
   def resetKeyItems(self):
     self.keyItems = {
@@ -42,10 +43,29 @@ class KeyItemManager:
       "Robo's Ribbon": KeyItem("Robo's Ribbon", 0xB8)
     }
     
+  def getKeyItemList(self):
+    keyItemList = []
+    for key,value in self.keyItems.items():
+      keyItemList.append(key)
+    return keyItemList
+
+  def getKeyItem(self, name):
+    return self.keyItems[name]
+
+#
+# TODO: Add prolog
+#  
 class LocationManager:
   def __init__(self):
-    resetLocations(self)
-    
+    self.resetLocations()
+
+  def getLocationList(self):
+    locList = ["Zenan Bridge", "Lucca's House", "Denadoro Mountain", 
+               "Snail Stop", "Frog's Burrow", "Lazy Carpenter", "King's Trial", 
+               "Melchior's Refinements", "Giant's Claw", "Fiona's Shrine","Arris Done", 
+               "Geno Dome", "Sun Palace", "Reptite Lair", "Mount Woe" ]
+    return locList
+  
   def resetLocations(self):
     self.locations = [
       Location("Zenan Bridge", 0x393C82, 0x393C84),
@@ -64,4 +84,15 @@ class LocationManager:
       Location("Reptite Lair", 0x18FC2C, 0x18FC2F),
       Location("Mount Woe", 0x381010, 0x381013)
     ]
+    
+  #
+  # Get a location object based on a name.
+  #
+  # This should be a dictionary.  I'll fix it when I'm less lazy.
+  #
+  def getLocation(self, name):
+    for location in self.locations:
+      if location.name == name:
+        return location
+    
   
