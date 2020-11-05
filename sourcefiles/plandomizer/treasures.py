@@ -1,5 +1,17 @@
+#
+# This file contains a number of dictionaries used to map
+# names of items and locations to their respective item codes
+# and location pointers.  It also contains several functions
+# used to do reverse lookups in the maps. 
+#
+# TODO - Look into either a BiMap or some other solution so that
+#        reverse lookups don't have to iterate over the dictionaries.
+#
 
 
+#
+# Map treasure chests to their pointers.
+#
 TreasureChestMap = {
   "Truce Mayor's House F1": 0x35F40C,
   "Truce Mayor's House F2": 0x35F410,
@@ -245,6 +257,9 @@ TreasureChestMap = {
   "Prison Tower": 0x35F7DC
 }
 
+#
+# Map sealed chest names to their pointers.
+#
 SealedChestMap = {
   "Truce Inn 600AD":[0x19FE7C,0x19FE83],
   "Porre Elder's House 1":[0x1B90EA,0x1B90F2],
@@ -266,6 +281,9 @@ SealedChestMap = {
   "Hero's Grave 3":[0x393F8,0x393FF]
 }
 
+#
+# Map item names to item code used in game.
+#
 ItemNameToCodeMap = {
   "Wood Sword":0x01,
   "Iron Blade":0x02,
@@ -480,6 +498,40 @@ ItemNameToCodeMap = {
 }
 
 #
+# Map shop names to shop pointers
+# TODO - shop mappings are guesses right now
+#
+# NOTE: There are a lot more shop dialogs defined, but 
+#       they don't appear to be used in the vanilla game.
+#
+ShopNameToCodeMap = {
+  "Melchior (Millenial Fair)":0x00000, # ??? Need to find the address for this
+  "Truce Market (Middle Ages)":0xC2C6F,
+  "Truce Market (Present)":0xC2C71,
+  "Arris Dome":0xC2C73,
+  "Melchior Hut":0xC2C75,
+  "Sandorino Market":0xC2C77,
+  "Porre Market (Middle Ages)":0xC2C79,
+  "Kajar2":0xC2C7B, # Vanilla Last Village
+  "Ioka Trading Post":0xC2C7D,
+  "???":0xC2C7F, # Vanilla Last Village (Updated)
+  "Kajar1":0xC2C81,
+  "Enhasa":0xC2C83,
+  "Porre Market (Present)":0xC2C85,
+  "Algetty":0xC2C87,
+  "Choras Inn (Present)":0xC2C89,
+  "Choras Market (Middle Ages)":0xC2C8B,
+  "Millenial Fair Armor":0xC2C8D,
+  "Millenial Fair Items":0xC2C8F,
+  "UNUSED1":0xC2C91,
+  "Trann Dome":0xC2C93,
+  "UNUSED2":0xC2C95,
+  "Medina Market":0xC2C97,
+  "Fiona Shrine":0xC2C99,
+  "Black Omen":0xC2C9B
+}
+
+#
 # Reverse lookup in the dictionary to get a name from a pointer.
 # TODO - Look into either a bimap or a second map for this lookup.
 #
@@ -496,5 +548,11 @@ def getNameFromPointer(pointer):
 def getSealedChestNameFromPointer(pointer):
   for name, pointers in SealedChestMap.items():
     if pointer in pointers:
+      return name
+  return ""
+  
+def getTreasureNameFromValue(value):
+  for name, code in ItemNameToCodeMap.items():
+    if value == code:
       return name
   return ""

@@ -95,8 +95,9 @@ def handleShops(datastore):
   outfile = datastore.outputFile
   shops.randomize_shops(outfile)
 
-
+#
 # handle tech randomization  
+#
 def handleTechs(datastore):
   outfile = datastore.outputFile
   
@@ -153,6 +154,7 @@ def handleTreasures(datastore):
     if locationName == "" or not locationName in treasureMap.keys():
       # This chest isn't in the plando treasure list or
       # the user didn't specify a treasure for this chest
+      # Choose a treasure randomly
       treasureCode = treasurewriter.choose_item(pointer, datastore.difficulty.get())
     else:
       # The user specified a treasure for this chest
@@ -178,10 +180,12 @@ def handleTreasures(datastore):
     treasureCode = 0
     if locationName == "" or not locationName in sealedChestMap.keys():
       # This chest isn't in the sealed treasure list or
-      # the user didn't specify a treasure for this chest
+      # the user didn't specify a treasure for this chest.
+      # Choose a treasure randomly
       treasureCode = rand.choice(specialwriter.sealed_treasures)
       treasureName = str(treasureCode)
     else:
+      # The user specified a treasure for this sealed chest
       treasureName = sealedChestMap[locationName]
       treasureCode = treasures.ItemNameToCodeMap[treasureName]
   
@@ -298,7 +302,7 @@ def handleCharacters(datastore):
       "Frog Burrow":"burrow", 
       "Dactyl Nest":"dactyl"}
   
-  #Map of character display names to internal randomizer values
+  # Map of character display names to internal randomizer values
   characters = {
       "Crono":cw.chrono, 
       "Marle":cw.marle, 

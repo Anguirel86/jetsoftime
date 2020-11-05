@@ -19,8 +19,8 @@ Guardia Forest 600AD:Flint Edge
 
 # Sealed Chests Present
 Truce Inn 1000AD:Dark Saber
-Forest Ruins 1:Aeon Blade - Got a Nova Armor
-Forest Ruins 2:Demon Edge - Got a Brave Sword
+Forest Ruins 1:Aeon Blade
+Forest Ruins 2:Demon Edge
 Porre Mayor's House 1:AlloyBlade
 Porre Mayor's House 2:Star Sword
 Guardia Forest 1000AD:VedicBlade
