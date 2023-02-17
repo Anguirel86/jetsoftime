@@ -33,13 +33,13 @@ locationGroups = []
 def getAvailableLocations(game: logictypes.Game) -> list[logictypes.Location]:
   # Have the game object update what characters are available based on the
   # currently available items and time periods.
-  game.updateAvailableCharacters()
+  game.update_available_characters()
   
   # Get a list of all accessible location groups
   accessibleLocationGroups = []
   for locationGroup in locationGroups:
-    if locationGroup.canAccess(game):
-      if locationGroup.getAvailableLocationCount() > 0:
+    if locationGroup.can_access(game):
+      if locationGroup.get_available_location_count() > 0:
         accessibleLocationGroups.append(locationGroup)
   
   return accessibleLocationGroups
@@ -59,14 +59,14 @@ def getRandomLocation(groups):
   # This will be used to help select a location group
   weightTotal = 0
   for group in groups:
-    weightTotal = weightTotal + group.getWeight()
+    weightTotal = weightTotal + group.get_weight()
   
   # Select a location group
   locationChoice = rand.randint(1, weightTotal)
   counter = 0
   chosenGroup = None
   for group in groups:
-    counter = counter + group.getWeight()
+    counter = counter + group.get_weight()
     if counter >= locationChoice:
       chosenGroup = group
       break
@@ -112,9 +112,9 @@ def getShuffledKeyItemList(weightedList):
 #
 def determineKeyItemPlacement(gameConfig):
   global locationGroups
-  locationGroups = gameConfig.getLocations()
-  # game = gameConfig.getGame()
-  remainingKeyItems = gameConfig.getKeyItemList()
+  locationGroups = gameConfig.get_locations()
+  # game = gameConfig.get_game()
+  remainingKeyItems = gameConfig.get_key_item_list()
   chosenLocations = []
   return determineKeyItemPlacement_impl(chosenLocations,
                                         remainingKeyItems, gameConfig)
@@ -145,7 +145,7 @@ def determineKeyItemPlacement(gameConfig):
 #                     this contains a Game object which determines the logic
 #                     while the GameConfig itself has rules for how the keyItem
 #                     items may change over time.
-# TODO:  Should this pass two parameters? Game and updateKeyItems function?
+# TODO:  Should this pass two parameters? Game and update_key_items function?
 #        It's weird using the Game member of GameConfig.
 #
 # return: A tuple containing:
@@ -162,7 +162,7 @@ def determineKeyItemPlacement_impl(chosenLocations,
     return True, chosenLocations
   else:
     # We still have key items to place.
-    availableLocations = getAvailableLocations(gameConfig.getGame())
+    availableLocations = getAvailableLocations(gameConfig.get_game())
     if len(availableLocations) == 0:
       # This item configuration is not completable. 
       return False, chosenLocations
@@ -178,15 +178,15 @@ def determineKeyItemPlacement_impl(chosenLocations,
       chosenLocations.append(location)
       
       # Sometimes key item bias is removed after N checks
-      gameConfig.updateKeyItems(remainingKeyItems)
+      gameConfig.update_key_items(remainingKeyItems)
 
       # Use the weighted key item list to get a list of key items
       # that we can loop through and attempt to place.
       localKeyItemList = getShuffledKeyItemList(remainingKeyItems)
       for keyItem in localKeyItemList:
         # Try placing this key item and then recurse
-        location.setKeyItem(keyItem)
-        gameConfig.getGame().addKeyItem(keyItem)
+        location.set_key_item(keyItem)
+        gameConfig.get_game().add_key_item(keyItem)
         
         newKeyItemList = [x for x in remainingKeyItems if x != keyItem]
         # recurse and try to place the next key item.
@@ -199,14 +199,14 @@ def determineKeyItemPlacement_impl(chosenLocations,
           # We're unwinding the recursion here, all key items are placed.
           return keyItemConfirmed, returnedChosenLocations
         else:
-          gameConfig.getGame().removeKeyItem(keyItem)
+          gameConfig.get_game().remove_key_item(keyItem)
       # end keyItem loop
       
       # If we get here, we failed to place an item.  Undo location modifications
       locationGroup.addLocation(location)
       locationGroup.undoWeightDecay()
       chosenLocations.remove(location)
-      location.unsetKeyItem()
+      location.unset_key_item()
       
       return False, chosenLocations
 
@@ -225,8 +225,8 @@ def writeSpoilerLog(chosenLocations, charLocations):
   spoilerLog.write("Key ItemLocations:\n")
   for location in chosenLocations:
     spoilerLog.write("  " +
-                     location.getName() + ": " +
-                     location.getKeyItem().name + "\n")
+                     location.get_name() + ": " +
+                     location.get_key_item().name + "\n")
 
   # Write the character locations to the spoiler log
   spoilerLog.write("\n\nCharacter Locations:\n")
@@ -250,7 +250,7 @@ def commitKeyItems(settings: rset.Settings,
     charLocations = config.char_assign_dict
 
     # Get a game configuration for the provided flags
-    gameConfig = logicfactory.getGameConfig(settings, config)
+    gameConfig = logicfactory.get_game_config(settings, config)
 
     # Determine placements for the key items
     success, chosenLocations = determineKeyItemPlacement(gameConfig)
@@ -261,22 +261,22 @@ def commitKeyItems(settings: rset.Settings,
 
     # Write key items to the config
     for location in chosenLocations:
-        location.writeKeyItem(config)
+        location.write_key_item(config)
 
     additional_locs = []
     # Go through any baseline locations not assigned an item and place a
     # piece of treasure. Treasure quality is based on the location's loot tier.
     for locationGroup in locationGroups:
-        for location in locationGroup.getLocations():
+        for location in locationGroup.get_locations():
             if type(location) == logictypes.BaselineLocation and \
                (location not in chosenLocations):
 
                 # This is a baseline location without a key item.
                 # Assign a piece of treasure if it has none.
-                if location.getKeyItem() in (None,
-                                             ctenums.ItemID.NONE,
-                                             ctenums.ItemID.MOP):
-                    location.writeRandomItem(config)
+                if location.get_key_item() in (None,
+                                               ctenums.ItemID.NONE,
+                                               ctenums.ItemID.MOP):
+                    location.write_random_item(config)
 
                 # Always list the BaselineLocations for spoiler purposes
                 additional_locs.append(location)

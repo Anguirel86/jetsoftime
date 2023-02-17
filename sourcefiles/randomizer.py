@@ -23,6 +23,7 @@ import cosmetichacks
 import bucketfragment
 import iceage
 import legacyofcyrus
+import multiworld
 import mystery
 import vanillarando
 import epochfail
@@ -187,6 +188,9 @@ class Randomizer:
 
         # Bucket
         bucketfragment.write_fragments_to_config(self.settings, self.config)
+
+        # Archipelago (multiworld)
+        multiworld.generate_multiworld_config(self.settings, self.config)
 
         # Omen elevator
         self.__update_key_item_descs()
@@ -1100,12 +1104,12 @@ class Randomizer:
         # We have to use the logicwriter's Location class only because
         # of Chronosanity's linked locations needing to be handled properly.
 
-        width = max(len(x.getName()) for x in self.config.key_item_locations)
+        width = max(len(x.get_name()) for x in self.config.key_item_locations)
 
         for location in self.config.key_item_locations:
-            item_id = location.lookupKeyItem(self.config)
+            item_id = location.lookup_key_item(self.config)
             item_name = self.config.itemdb[item_id].get_name_as_str(True)
-            file_object.write(str.ljust(f"{location.getName()}", width+8) +
+            file_object.write(str.ljust(f"{location.get_name()}", width + 8) +
                               item_name + '\n')
         file_object.write('\n')
         file_object.write('Completion by Spheres:\n')

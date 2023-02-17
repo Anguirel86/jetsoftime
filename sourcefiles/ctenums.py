@@ -541,6 +541,7 @@ class ItemID(StrIntEnum):
     FEATHERS_2 = 0xE7
     BUCKETFRAG = 0xE8
     JETSOFTIME = 0xE9
+    APITEM = 0xEA
 
     @classmethod
     def get_key_items(cls):

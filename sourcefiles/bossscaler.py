@@ -90,7 +90,7 @@ def determine_boss_rank(settings: rset.Settings, config: cfg.RandoConfig):
         return
 
     # I can't do this because of a circular import.
-    # game_config = logicfactory.getGameConfig(settings, config)
+    # game_config = logicfactory.get_game_config(settings, config)
     # key_item_list = game_config.keyItemList
 
     # It's ok to get more KIs than needed

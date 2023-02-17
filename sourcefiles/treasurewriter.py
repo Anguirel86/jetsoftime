@@ -108,7 +108,7 @@ def add_lw_key_item_gear(settings: rset.Settings,
         # We use Cronosanity's location types in the spoiler log, so we
         # sort of hack some new ones on to have the new items.
         loc = logictypes.Location(tid)
-        loc.setKeyItem(item)
+        loc.set_key_item(item)
         config.key_item_locations.append(loc)
 
 

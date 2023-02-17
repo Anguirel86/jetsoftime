@@ -10,136 +10,94 @@ import randoconfig as cfg
 #
 
 
-#
-# The Game class is used to keep track of game state
-# as the randomizer places key items.  It:
-#   - Tracks key items obtained
-#   - Tracks characters obtained
-#   - Keeps track of user selected flags
-#   - Provides logic convenience functions
-#
 class Game:
+    """
+    The Game class is used to keep track of game state
+    as the randomizer places key items.  It:
+      - Tracks key items obtained
+      - Tracks characters obtained
+      - Keeps track of user selected flags
+      - Provides logic convenience functions
+    """
+
     def __init__(self, settings: rset.Settings,
                  config: cfg.RandoConfig):
         self.characters = set()
-        self.keyItems = set()
-        self.earlyPendant = rset.GameFlags.FAST_PENDANT in settings.gameflags
-        self.lockedChars = rset.GameFlags.LOCKED_CHARS in settings.gameflags
-        self.lostWorlds = rset.GameMode.LOST_WORLDS == settings.game_mode
-        self.charLocations = config.char_assign_dict
-        self.legacyofcyrus = \
+        self.key_items = set()
+        self.early_pendant = rset.GameFlags.FAST_PENDANT in settings.gameflags
+        self.locked_chars = rset.GameFlags.LOCKED_CHARS in settings.gameflags
+        self.lost_worlds = rset.GameMode.LOST_WORLDS == settings.game_mode
+        self.char_locations = config.char_assign_dict
+        self.legacy_of_cyrus = \
             rset.GameMode.LEGACY_OF_CYRUS == settings.game_mode
 
         # In case we need to look something else up
         self.settings = settings
 
-    #
-    # Get the number of key items that have been acquired by the player.
-    #
-    # return: Number of obtained key items
-    #
+    def get_key_item_count(self):
+        """
+        Get the number of key items that have been acquired by the player.
 
-    def getKeyItemCount(self):
-        return len(self.keyItems)
+        :return: Number of obtained key items
+        """
+        return len(self.key_items)
 
-    #
-    # Set whether or not this seed is using the early pendant flag.
-    # This is used to determine when sealed chests and sealed doors become
-    # available.
-    #
-    # param: pflag - boolean, whether or not the early pendant flag is on
-    #
-    def setEarlyPendant(self, pflag):
-        print('Warning: setEarlyPendant() ignored.\n'
-              'Class logictypes.Game can not change game settings.'
-              'Please supply the correct randosettings.Settings object at '
-              'object creation.')
-        # self.earlyPendant = pflag
+    def has_character(self, character: CharID) -> bool:
+        """
+        Check if the player has the specified character
 
-    #
-    # Set whether or not this seed is using the Locked Characters flag.
-    # This is used to determine when characters become available to unlock
-    # further checks.
-    #
-    # param cflag - boolean, whether or not the locked characters flag is on
-    #
-    def setLockedCharacters(self, cflag):
-        print('Warning: setLockedCharacters() ignored.\n'
-              'Class logictypes.Game can not change game settings.'
-              'Please supply the correct randosettings.Settings object at '
-              'object creation.')
-        # self.lockedChars = cflag
-
-    #
-    # Set whether or not this seed is using the Lost Worlds flag.
-    # This is used to determine time period access in Lost Worlds games.
-    #
-    # param lFlag - boolean, whether or not the Lost Worlds flag is on
-    #
-    def setLostWorlds(self, lFlag):
-        print('Warning: setLostWorlds() ignored.\n'
-              'Class logictypes.Game can not change game settings.'
-              'Please supply the correct randosettings.Settings object at '
-              'object creation.')
-        # self.lostWorlds = lFlag
-
-    #
-    # Check if the player has the specified character
-    #
-    # param: character - Name of a character
-    # return: true if the character has been acquired, false if not
-    #
-    def hasCharacter(self, character):
+        :param character: Name of a character
+        :return: true if the character has been acquired, false if not
+        """
         return character in self.characters
 
-    #
-    # Add a character to the set of characters acquired
-    #
-    # param: character - The character to add
-    #
-    def addCharacter(self, character):
+    def add_character(self, character: CharID):
+        """
+        Add a character to the set of characters acquired.
+
+        :param character: The character to add
+        """
         self.characters.add(character)
 
-    #
-    # Remove a character from the set of characters acquired
-    #
-    # param: character: The character to remove
-    #
-    def removeCharacter(self, character):
+    def remove_character(self, character: CharID):
+        """
+        Remove a character from the set of characters acquired.
+
+        :param character: The character to remove
+        """
         self.characters.discard(character)
 
-    #
-    # Check if the player has a given key item.
-    #
-    # param: item - The key item to check for
-    # returns: True if the player has the key item, false if not
-    #
-    def hasKeyItem(self, item):
-        return item in self.keyItems
+    def has_key_item(self, item: ItemID) -> bool:
+        """
+        Check if the player has a given key item.
 
-    #
-    # Add a key item to the set of key items acquired
-    #
-    # param: item - The Key Item to add
-    #
-    def addKeyItem(self, item):
-        self.keyItems.add(item)
+        :param item: The key item to check for
+        :return: True if the player has the key item, false if not
+        """
+        return item in self.key_items
 
-    #
-    # Remove a key item from the set of key items acquired
-    #
-    # param: item: The Key Item to remove
-    #
-    def removeKeyItem(self, item):
-        self.keyItems.discard(item)
+    def add_key_item(self, item: ItemID):
+        """
+        Add a key item to the set of key items acquired.
 
-    #
-    # Determine which characters are available based on what key items/time
-    # periods are available to the player.
-    #
-    # Character locations are provided elsewhere by a cfg.RandoConfig object.
-    #
-    def updateAvailableCharacters(self):
+        :param item: The Key Item to add
+        """
+        self.key_items.add(item)
+
+    def remove_key_item(self, item: ItemID):
+        """
+        Remove a key item from the set of key items acquired.
+
+        :param item: The Key Item to remove
+        """
+        self.key_items.discard(item)
+
+    def update_available_characters(self):
+        """
+        Determine which characters are available based on what key items/time
+        periods are available to the player.
+        """
+
         # charLocations is a dictionary from cfg.RandoConfig whose keys come
         # from ctenums.RecruitID.  The corresponding value gives the held
         # character in a held_char field
@@ -150,332 +108,345 @@ class Game:
 
         if rset.GameFlags.STARTERS_SUFFICIENT in self.settings.gameflags and \
            self.settings.game_mode == rset.GameMode.STANDARD:
-            self.addCharacter(
-                self.charLocations[RecruitID.STARTER_1].held_char
+            self.add_character(
+                self.char_locations[RecruitID.STARTER_1].held_char
             )
-            self.addCharacter(
-                self.charLocations[RecruitID.STARTER_2].held_char
+            self.add_character(
+                self.char_locations[RecruitID.STARTER_2].held_char
             )
 
             # You have to add the other characters eventually or else the
             # logic will stall out.
-            if self.canAccessBlackOmen() and self.canAccessTyranoLair() and \
-               self.hasKeyItem(ItemID.RUBY_KNIFE):
-                self.addCharacter(
-                    self.charLocations[RecruitID.CATHEDRAL].held_char
+            if self._can_access_black_omen() and self._can_access_tyrano_lair() and \
+               self.has_key_item(ItemID.RUBY_KNIFE):
+                self.add_character(
+                    self.char_locations[RecruitID.CATHEDRAL].held_char
                 )
-                self.addCharacter(
-                    self.charLocations[RecruitID.CASTLE].held_char
+                self.add_character(
+                    self.char_locations[RecruitID.CASTLE].held_char
                 )
-                self.addCharacter(
-                    self.charLocations[RecruitID.PROTO_DOME].held_char
+                self.add_character(
+                    self.char_locations[RecruitID.PROTO_DOME].held_char
                 )
-                self.addCharacter(
-                    self.charLocations[RecruitID.DACTYL_NEST].held_char
+                self.add_character(
+                    self.char_locations[RecruitID.DACTYL_NEST].held_char
                 )
-                self.addCharacter(
-                    self.charLocations[RecruitID.FROGS_BURROW].held_char
+                self.add_character(
+                    self.char_locations[RecruitID.FROGS_BURROW].held_char
                 )
             return
 
         # The first four characters are always available.
-        self.addCharacter(self.charLocations[RecruitID.STARTER_1].held_char)
-        self.addCharacter(self.charLocations[RecruitID.STARTER_2].held_char)
-        self.addCharacter(self.charLocations[RecruitID.CATHEDRAL].held_char)
-        self.addCharacter(self.charLocations[RecruitID.CASTLE].held_char)
+        self.add_character(self.char_locations[RecruitID.STARTER_1].held_char)
+        self.add_character(self.char_locations[RecruitID.STARTER_2].held_char)
+        self.add_character(self.char_locations[RecruitID.CATHEDRAL].held_char)
+        self.add_character(self.char_locations[RecruitID.CASTLE].held_char)
 
         # The remaining three characters are progression gated.
-        if self.canAccessFuture():
-            self.addCharacter(
-                self.charLocations[RecruitID.PROTO_DOME].held_char
+        if self._can_access_future():
+            self.add_character(
+                self.char_locations[RecruitID.PROTO_DOME].held_char
             )
-        if self.canAccessDactylCharacter():
-            self.addCharacter(
-                self.charLocations[RecruitID.DACTYL_NEST].held_char
+        if self._can_access_dactyl_character():
+            self.add_character(
+                self.char_locations[RecruitID.DACTYL_NEST].held_char
             )
-        if self.hasMasamune():
-            self.addCharacter(
-                self.charLocations[RecruitID.FROGS_BURROW].held_char
+        if self._has_masamune():
+            self.add_character(
+                self.char_locations[RecruitID.FROGS_BURROW].held_char
             )
-    # end updateAvailableCharacters function
+    # end update_available_characters function
 
-    #
-    # Logic convenience functions.  These can be used to
-    # quickly check if particular eras or locations are
-    # logically accessible.
-    #
-    def canAccessDactylCharacter(self):
+    def _can_access_dactyl_character(self):
         # If character locking is on, dreamstone is required to get the
         # Dactyl Nest character in addition to prehistory access.
-        return (self.canAccessPrehistory() and
-                ((not self.lockedChars) or
-                 self.hasKeyItem(ItemID.DREAMSTONE)))
+        return (self._can_access_prehistory() and
+                ((not self.locked_chars) or
+                 self.has_key_item(ItemID.DREAMSTONE)))
 
-    def canAccessFuture(self):
-        return not self.legacyofcyrus and \
-            (self.hasKeyItem(ItemID.PENDANT) or self.lostWorlds)
+    def _can_access_future(self):
+        return not self.legacy_of_cyrus and \
+               (self.has_key_item(ItemID.PENDANT) or self.lost_worlds)
 
-    def canAccessPrehistory(self):
-        return self.hasKeyItem(ItemID.GATE_KEY) or self.lostWorlds
+    def _can_access_prehistory(self):
+        return self.has_key_item(ItemID.GATE_KEY) or self.lost_worlds
 
-    def canAccessTyranoLair(self):
-        return self.canAccessPrehistory() and \
-            self.hasKeyItem(ItemID.DREAMSTONE)
+    def _can_access_tyrano_lair(self):
+        return self._can_access_prehistory() and \
+            self.has_key_item(ItemID.DREAMSTONE)
 
-    def hasMasamune(self):
-        return (self.hasKeyItem(ItemID.BENT_HILT) and
-                self.hasKeyItem(ItemID.BENT_SWORD))
+    def _has_masamune(self):
+        return (self.has_key_item(ItemID.BENT_HILT) and
+                self.has_key_item(ItemID.BENT_SWORD))
 
-    def canAccessMagusCastle(self):
-        return (self.hasMasamune() and
-                self.hasCharacter(CharID.FROG))
-
-    def canAccessMtWoe(self):
-        return (self.lostWorlds or
-                self.canAccessPrehistory() or
-                self.canAccessFuture())
-
-    def canAccessOceanPalace(self):
-        return (
-            self.canAccessMagusCastle() or
-            (
-                self.canAccessTyranoLair() and
-                self.hasKeyItem(ItemID.RUBY_KNIFE)
-            )
-        )
-
-    def canAccessBlackOmen(self):
-        return (self.canAccessFuture() and
-                self.hasKeyItem(ItemID.CLONE) and
-                self.hasKeyItem(ItemID.C_TRIGGER))
-
-    def canGetSunstone(self):
-        return (self.canAccessFuture() and
-                self.canAccessPrehistory() and
-                self.hasKeyItem(ItemID.MOON_STONE))
-
-    def canAccessKingsTrial(self):
-        return (self.hasCharacter(CharID.MARLE) and
-                self.hasKeyItem(ItemID.PRISMSHARD))
-
-    def canAccessMelchiorsRefinements(self):
-        return (self.canAccessKingsTrial() and
-                self.canGetSunstone())
-
-    def canAccessGiantsClaw(self):
-        return self.hasKeyItem(ItemID.TOMAS_POP)
-
-    def canAccessRuins(self):
-        return self.hasKeyItem(ItemID.MASAMUNE_2)
-
-    def canAccessSealedChests(self):
-        # With 3.1.1. logic change, canAccessDarkAges isn't correct for
-        # checking sealed chest access.  Instead check for actual go modes.
-        return (
-            self.hasKeyItem(ItemID.PENDANT) and
-             (self.earlyPendant or
-              self.canAccessTyranoLair() or
-              self.canAccessMagusCastle())
-        )
-
-    def canAccessBurrowItem(self):
-        return self.hasKeyItem(ItemID.HERO_MEDAL)
-
-    def canAccessFionasShrine(self):
-        return self.hasCharacter(CharID.ROBO)
+    def _can_access_black_omen(self):
+        return (self._can_access_future() and
+                self.has_key_item(ItemID.CLONE) and
+                self.has_key_item(ItemID.C_TRIGGER))
     # End Game class
 
-#
-# This class represents a location within the game.
-# It is the parent class for the different location types
-#
+
+class LogicRule:
+    """
+    This class holds logical access rules for a LocationGroup.
+    """
+    def __init__(self):
+        self.rules = []
+        pass
+
+    def add_rule(self, rule: list[typing.Union[ItemID, CharID]]):
+        """
+        Add a rule to this object.
+        Rules are a list of item or character IDs that block access to a location.
+
+        :param rule: List of items or characters needed to access a location
+        :return: A reference to this object
+        """
+        self.rules.append(rule)
+        return self
+
+    def get_multiworld_rule(self):
+        """
+        Get this access rule in a format suitable for the multiworld yaml.
+        """
+        pass
+
+    def add_requirement(self, new_rule: list[typing.Union[ItemID, CharID]]):
+        """
+        Extend an existing rule with a new set of requirements.
+
+        :param new_rule: new rule to append to the existing rules
+        """
+        if len(self.rules) == 0:
+            self.add_rule(new_rule)
+        else:
+            for rule in self.rules:
+                rule.extend(new_rule)
+
+    def __call__(self, game: Game) -> bool:
+        """
+        Evaluate this set of rules to see if a location group is accessible.
+
+        :param game: Game object with current game state
+        :return: True if the location is accessible, false if not
+        """
+        if len(self.rules) == 0:
+            # Empty rules list means this is a sphere 0 check
+            return True
+
+        for rule in self.rules:
+
+            can_access = True
+            for requirement in rule:
+                has_char = game.has_character(requirement) if type(requirement) == type(CharID) else False
+                has_key = game.has_key_item(requirement) if type(requirement) == type(ItemID) else False
+                if not (has_char or has_key):
+                    can_access = False
+                    break
+
+            if can_access:
+                return True
+
+        return False
 
 
 class Location:
+    """
+    This class represents a location within the game.
+    It is the parent class for the different location types
+    """
+
     def __init__(self, treasure_id: TreasureID):
         self.treasure_id = treasure_id
-        self.keyItem = None
+        self.key_item = None
 
     def _jot_json(self):
-        return {self.getName(): str(self.getKeyItem())}
+        return {self.get_name(): str(self.get_key_item())}
 
-    #
-    # Get the name of this location.
-    #
-    # return: The name of this location
-    #
-    def getName(self):
+    def get_name(self) -> str:
+        """
+        Get the name of this location.
+
+        :return: The name of this location
+        """
         return str(self.treasure_id)
 
-    #
-    # Set the key item at this location.
-    #
-    # param: keyItem The key item to be placed at this location
-    #
-    def setKeyItem(self, keyItem):
-        self.keyItem = keyItem
+    def set_key_item(self, key_item: ItemID):
+        """
+        Set the key item at this location.
 
-    #
-    # Get the key item placed at this location.
-    #
-    # return: The key item being held in this location
-    #
-    def getKeyItem(self):
-        return self.keyItem
+        :param key_item: The key item to be placed at this location
+        """
+        self.key_item = key_item
 
-    #
-    # Unset the key item from this location.
-    #
-    def unsetKeyItem(self):
-        self.keyItem = None
+    def get_key_item(self) -> ItemID:
+        """
+        Get the key item placed at this location.
 
-    #
-    # Determine whether the location holds the given TID
-    #
-    def hasTID(self, treasure_id: TreasureID) -> bool:
+        :return: The key item being held in this location
+        """
+        return self.key_item
+
+    def unset_key_item(self):
+        """
+        Unset the key item from this location.
+        """
+        self.key_item = None
+
+    def has_tid(self, treasure_id: TreasureID) -> bool:
+        """
+        Determine whether the location holds the given TID
+
+        :param treasure_id: The treasureID to check against this location's treasure
+        :return: True if this location contains the given treasure, false if not
+        """
         return self.treasure_id == treasure_id
 
-    #
-    # Write the key item set to this location to a RandoConfig object
-    #
-    # param: config - The randoconfig.RandoConfig object which holds the
-    #                 treasure assignment dictionary
-    #
-    def writeKeyItem(self, config: cfg.RandoConfig):
-        config.treasure_assign_dict[self.treasure_id].held_item = self.keyItem
+    def write_key_item(self, config: cfg.RandoConfig):
+        """
+        Write the key item set to this location to a RandoConfig object
+        :param config: The RandoConfig object which holds the
+                       treasure assignment dictionary
+        """
+        config.treasure_assign_dict[self.treasure_id].held_item = self.key_item
 
-    #
-    # Use the given config to see what is currently assigned to this location.
-    #
-    # param: config - The randoconfig.RandoConfig object which holds the
-    #                 treasure assignment dictionary
-    #
-    def lookupKeyItem(self, config: cfg.RandoConfig) -> ItemID:
+    def lookup_key_item(self, config: cfg.RandoConfig) -> ItemID:
+        """
+        Use the given config to see what is currently assigned to this location.
+
+        :param config: The RandoConfig object which holds the
+                       treasure assignment dictionary
+        """
         return config.treasure_assign_dict[self.treasure_id].held_item
 
 # End Location class
 
 
-#
-# The randomizer assigns a treasure to each location, even key item locations.
-# Some game modes may choose to define special rules for some locations.
-#
-# The BaselineLocation class allows a location to be augmented with a treasure
-# distribution (treasuredata.TreasureDist) which determines how an item should
-# be assigned to it in the event that a key item assignment is not made.
-#
 class BaselineLocation(Location):
+    """
+    The randomizer assigns a treasure to each location, even key item locations.
+    Some game modes may choose to define special rules for some locations.
+
+    The BaselineLocation class allows a location to be augmented with a treasure
+    distribution (treasuredata.TreasureDist) which determines how an item should
+    be assigned to it in the event that a key item assignment is not made.
+    """
+
     def __init__(self, treasure_id: TreasureID,
-                 lootDist: td.TreasureDist):
+                 loot_dist: td.TreasureDist):
         Location.__init__(self, treasure_id)
-        self.lootDist = lootDist
+        self.loot_dist = loot_dist
 
-    #
-    # Get the treasure distribution associated with this check.
-    #
-    # return: The treasure distribution associated with this check
-    #
-    def getTreasureDist(self):
-        return self.lootDist
+    def get_treasure_dist(self) -> td.TreasureDist:
+        """
+        Get the treasure distribution associated with this check.
 
-    #
-    # Set the treasure distribution associated with this check.
-    #
-    # param: The treasure distribution to associate with this check
-    #
-    def setTreasureDist(self, lootDist: td.TreasureDist):
-        self.lootDist = lootDist
+        :return: The treasure distribution associated with this check
+        """
+        return self.loot_dist
 
-    #
-    # Use this object's treasure distribution to write a random item to theen
-    # given config.  Also sets this object's key item to the chosen item.
-    #
-    # param: config - The cfg.RandoConfig to write the item to
-    #
-    def writeRandomItem(self, config: cfg.RandoConfig):
-        item = self.lootDist.get_random_item()
-        self.writeTreasure(item, config)
+    def set_treasure_dist(self, loot_dist: td.TreasureDist):
+        """
+        Set the treasure distribution associated with this check.
 
-    #
-    # Write the given item to the given config.  Also sets this object's
-    # key item to the chosen item.
-    #
-    # param: treasure - The ItemID to write.
-    # param: config - The cfg.RandoConfig to write the ItemID to
-    #
-    def writeTreasure(self, treasure: ItemID, config: cfg.RandoConfig):
+        :param loot_dist: The treasure distribution to associate with this check
+        """
+        self.loot_dist = loot_dist
+
+    def write_random_item(self, config: cfg.RandoConfig):
+        """
+        Use this object's treasure distribution to write a random item to then
+        given config.  Also sets this object's key item to the chosen item.
+
+        :param config: The cfg.RandoConfig to write the item to
+        """
+        item = self.loot_dist.get_random_item()
+        self.write_treasure(item, config)
+
+    def write_treasure(self, treasure: ItemID, config: cfg.RandoConfig):
+        """
+        Write the given item to the given config.  Also sets this object's
+        key item to the chosen item.
+
+        :param treasure: The ItemID to write
+        :param config: The cfg.RandoConfig to write the ItemID to
+        """
         config.treasure_assign_dict[self.treasure_id].held_item = treasure
-        self.setKeyItem(treasure)
+        self.set_key_item(treasure)
 # End BaselineLocation class
 
 
-#
-# This class represents a set of linked locations.  The key item will
-# be set in both of the locations.  This is used for the blue pyramid
-# where there are two chests but the player can only get one.
-#
+class LinkedLocation:
+    """
+    This class represents a set of linked locations.  The key item will
+    be set in both of the locations.  This is used for the blue pyramid
+    where there are two chests but the player can only get one.
 
-# Decided not to have LinkedLocation inherit from Location.
-# Location is a TID with an item assignment, but there are no TIDs to assign
-# to the linked locations.
-# Just make it implement the same behavior as Location.
-#
-class LinkedLocation():
+    Decided not to have LinkedLocation inherit from Location.
+    Location is a TID with an item assignment, but there are no TIDs to assign
+    to the linked locations.
+    Just make it implement the same behavior as Location.
+    """
     def __init__(self, location1: Location, location2: Location):
         self.location1 = location1
         self.location2 = location2
 
     def _jot_json(self):
-        return {self.getName(): str(self.getKeyItem())}
+        return {self.get_name(): str(self.get_key_item())}
 
-    def getName(self):
-        return (f"Linked: {self.location1.getName()} + "
-                f"{self.location2.getName()}")
-    #
-    # Set the key item for both locations in this linked location.
-    #
+    def get_name(self):
+        return (f"Linked: {self.location1.get_name()} + "
+                f"{self.location2.get_name()}")
 
-    def setKeyItem(self, keyItem):
-        self.location1.setKeyItem(keyItem)
-        self.location2.setKeyItem(keyItem)
+    def set_key_item(self, key_item):
+        """
+        Set the key item for both locations in this linked location.
 
-    #
-    # Get the key item placed at this location.
-    #
-    # return: The key item being held in this location
-    #
+        @param key_item: Key item to set to the linked locations
+        """
+        self.location1.set_key_item(key_item)
+        self.location2.set_key_item(key_item)
 
-    def getKeyItem(self):
-        if self.location1.getKeyItem() == self.location2.getKeyItem():
-            return self.location1.keyItem
+    def get_key_item(self):
+        """
+        Get the key item placed at this location.
+
+        :return: The key item being held in this location
+        """
+        if self.location1.get_key_item() == self.location2.get_key_item():
+            return self.location1.key_item
         else:
             raise ValueError('Linked locations do not match.')
 
-    #
-    # Unset the key item from this location.
-    #
-    def unsetKeyItem(self):
-        self.location1.unsetKeyItem()
-        self.location2.unsetKeyItem()
+    def unset_key_item(self):
+        """
+        Unset the key item from this location.
+        """
+        self.location1.unset_key_item()
+        self.location2.unset_key_item()
 
-    #
-    # Write the key item to both of the linked locations
-    #
-    def writeKeyItem(self, config: cfg.RandoConfig):
-        self.location1.writeKeyItem(config)
-        self.location2.writeKeyItem(config)
+    def write_key_item(self, config: cfg.RandoConfig):
+        """
+        Write the key item to both of the linked locations.
 
-    #
-    # Use the given config to see what is currently assigned to this location.
-    # Since this is meant to be a lookup of a key item, this will raise a
-    # ValueError if the linked locations do not hold identical items.
-    #
-    # param: config - The randoconfig.RandoConfig object which holds the
-    #                 treasure assignment dictionary
-    #
-    def lookupKeyItem(self, config: cfg.RandoConfig) -> ItemID:
-        item1 = self.location1.lookupKeyItem(config)
-        item2 = self.location2.lookupKeyItem(config)
+        @param config: Config to write this location's item to
+        """
+        self.location1.write_key_item(config)
+        self.location2.write_key_item(config)
+
+    def lookup_key_item(self, config: cfg.RandoConfig) -> ItemID:
+        """
+        Use the given config to see what is currently assigned to this location.
+        Since this is meant to be a lookup of a key item, this will raise a
+        ValueError if the linked locations do not hold identical items.
+
+        :param config: The randoconfig.RandoConfig object which holds the
+                       treasure assignment dictionary
+        :return: The key item assigned to this location
+        :raises ValueError: When the linked locations are assigned different items
+        """
+        item1 = self.location1.lookup_key_item(config)
+        item2 = self.location2.lookup_key_item(config)
 
         if item1 != item2:
             raise ValueError(
@@ -484,162 +455,179 @@ class LinkedLocation():
         else:
             return item1
 
-    #
-    # Determine whether the location holds the given TID
-    #
-    def hasTID(self, treasure_id: TreasureID) -> bool:
-        return (self.location1.hasTID(treasure_id) or
-                self.location2.hasTID(treasure_id))
-# end LinkedLocation class
+    def has_tid(self, treasure_id: TreasureID) -> bool:
+        """
+        Determine whether the location holds the given TID.
 
-#
-# This class represents a group of locations controlled by
-# the same access rule.
-#
+        @param treasure_id: Treasure location to validate against this location's treasure
+        @return: True if treasures match, false if not
+        """
+        return (self.location1.has_tid(treasure_id) or
+                self.location2.has_tid(treasure_id))
+# end LinkedLocation class
 
 
 class LocationGroup:
-    #
-    # Constructor for a LocationGroup.
-    #
-    # param: name - The name of this LocationGroup
-    # param: weight - The initial weighting factor of this LocationGroup
-    # param: accessRule - A function used to determine if this LocationGroup
-    #                     is accessible
-    # param: weightDecay - Optional function to define weight decay of this
-    #                      LocationGroup
-    #
-    def __init__(self, name, weight, accessRule, weightDecay=None):
-        self.name = name
-        self.locations = []
-        self.weight = weight
-        self.accessRule = accessRule
-        self.weightDecay = weightDecay
-        self.weightStack = []
+    """
+    This class represents a group of locations controlled by
+    the same access rule.
+    """
 
-    #
-    # Return whether or not this location group is accessible.
-    #
-    # param: game - The game object with current game state
-    # return: True if this location is accessible, false if not
-    #
-    def canAccess(self, game):
-        return self.accessRule(game)
+    def __init__(self,
+                 name: str,
+                 weight: int,
+                 access_rule: LogicRule,
+                 weight_decay: typing.Callable[[int], int] = None):
+        """
+        Constructor for a LocationGroup.
 
-    #
-    # Get the name of this location.
-    #
-    # return: The name of this location
-    #
-    def getName(self):
+        :param name: The name of this LocationGroup
+        :param weight: The initial weighting factor of this LocationGroup
+        :param access_rule: A function used to determine if this LocationGroup
+                            is accessible
+        :param weight_decay: Optional function to define weight decay of this
+                             LocationGroup
+        """
+        self.name: str = name
+        self.locations: list[Location] = []
+        self.weight: int = weight
+        self.access_rule: LogicRule = access_rule
+        self.weight_decay: typing.Callable[[int], int] = weight_decay
+        self.weight_stack: list[int] = []
+
+    def can_access(self, game):
+        """
+        Return whether this location group is logically accessible.
+
+        :param game: The game object with current game state
+        :return: True if this location is accessible, false if not
+        """
+        return self.access_rule(game)
+
+    def get_access_rule(self) -> LogicRule:
+        """
+        Return a reference to the access rule used for this location.
+        :return: LogicRule used by this location
+        """
+        return self.access_rule
+
+    def get_name(self) -> str:
+        """
+        Get the name of this location group.
+        :return: The name of this location as a string
+        """
         return self.name
 
-    #
-    # Get the weight value being used to select locations from this group.
-    #
-    # return: Weight value used by this location group
-    #
-    def getWeight(self):
+    def get_weight(self) -> int:
+        """
+        Get the weight value being used to select locations from this group.
+
+        :return: Weight value used by this location group
+        """
         return self.weight
 
-    #
-    # Set the weight used when selecting locations from this group.
-    # The weight cannot be set less than 1.
-    #
-    # param: weight - Weight value to set
-    #
-    def setWeight(self, weight):
+    def set_weight(self, weight: int):
+        """
+        Set the weight used when selecting locations from this group.
+        The weight cannot be set less than 1.
+
+        :param weight: Weight value to set
+        """
         if weight < 1:
             weight = 1
         self.weight = weight
 
-    #
-    # This function is used to decay the weight value of this
-    # LocationGroup when a location is chosen from it.
-    #
-    def decayWeight(self):
-        self.weightStack.append(self.weight)
-        if self.weightDecay is None:
+    def decay_weight(self):
+        """
+        This function is used to decay the weight value of this
+        LocationGroup when a location is chosen from it.
+        """
+        self.weight_stack.append(self.weight)
+        if self.weight_decay is None:
             # If no weight decay function was given, reduce the weight of this
             # LocationGroup to 1 to make it unlikely to get any other items.
-            self.setWeight(1)
+            self.set_weight(1)
         else:
-            self.setWeight(self.weightDecay(self.weight))
+            self.set_weight(self.weight_decay(self.weight))
 
-    #
-    # Undo a previous weight decay of this LocationGroup.
-    # The previous weight values are stored in the weightStack.
-    #
-    def undoWeightDecay(self):
-        if len(self.weightStack) > 0:
-            self.setWeight(self.weightStack.pop())
+    def undo_weight_decay(self):
+        """
+        Undo a previous weight decay of this LocationGroup.
+        The previous weight values are stored in the weightStack.
+        """
+        if len(self.weight_stack) > 0:
+            self.set_weight(self.weight_stack.pop())
 
+    def restore_initial_weight(self):
+        """
+        Undo all weight decay of this LocationGroup.
+        """
+        if self.weight_stack:
+            self.set_weight(self.weight_stack[0])
+            self.weight_stack = []
 
-    #
-    # Undo all weight decay of this LocationGroup.
-    #
-    def restoreInitialWeight(self):
-        if self.weightStack:
-            self.setWeight(self.weightStack[0])
-            self.weightStack = []
+    def get_available_location_count(self) -> int:
+        """
+        Get the number of available locations in this group.
 
-
-    #
-    # Get the number of available locations in this group.
-    #
-    # return: The number of locations in this group
-    #
-    def getAvailableLocationCount(self):
+        :return: The number of locations in this group
+        """
         return len(self.locations)
 
-    #
-    # Add a location to this location group. If the location is
-    # already part of this location group then nothing happens.
-    #
-    # param: location - A location object to add to this location group
-    #
-    def addLocation(self, location):
+    def add_location(self, location):
+        """
+        Add a location to this location group. If the location is
+        already part of this location group then nothing happens.
+
+        :param location: A location object to add to this location group
+        """
         if location not in self.locations:
             self.locations.append(location)
         return self
 
-    #
-    # Remove a location from this group.
-    #
-    # param: location - Location to remove from this group
-    #
-    def removeLocation(self, location):
+    def remove_location(self, location):
+        """
+        Remove a location from this group.
+
+        :param location: Location to remove from this group
+        """
         self.locations.remove(location)
 
-    #
-    # Remove a location with the given TreasureID from this group
-    #
-    # param: location - TreasureID to remove from this group or an interable
-    #                   of TreasureIDs to remove
-    #
-    def removeLocationTIDs(
+    def remove_location_ti_ds(
             self,
             removed_treasure_ids: typing.Union[TreasureID,
                                                typing.Iterable[TreasureID]]):
-
+        """
+        Remove a location with the given TreasureID from this group
+        :param removed_treasure_ids: TreasureID to remove from this group or an iterable
+                                     of TreasureIDs to remove
+        """
         if isinstance(removed_treasure_ids, TreasureID):
             removed_treasure_ids = [removed_treasure_ids]
 
         remove_locs = []
         for loc in self.locations:
             for tid in removed_treasure_ids:
-                if loc.hasTID(tid):
+                if loc.has_tid(tid):
                     remove_locs.append(loc)
                     break
 
         for loc in remove_locs:
             self.locations.remove(loc)
 
-    #
-    # Get a list of all locations that are part of this location group.
-    #
-    # return: List of locations associated with this location group
-    #
-    def getLocations(self):
+    def get_locations(self) -> list[Location]:
+        """
+        Get a list of all locations that are part of this location group.
+        @return: List of locations associated with this LocationGroup
+        """
         return self.locations.copy()
+
+    def has_location(self, location: Location) -> bool:
+        """
+        Check if this group has a given location.
+        """
+        for loc in self.locations:
+            if loc.get_name() == location.get_name():
+                return True
+        return False
 # End LocationGroup class

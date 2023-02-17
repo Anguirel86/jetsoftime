@@ -75,6 +75,7 @@ class GameFlags(Flag):
     STARTERS_SUFFICIENT = auto()
     EPOCH_FAIL = auto()
     BOSS_SPOT_HP = auto()
+    MULTIWORLD = auto()
 
 # Dictionary for what flags force what other flags off.
 # Note that this is NOT symmetric.  For example Lost Worlds will force
@@ -286,7 +287,9 @@ class Settings:
             'Crono', 'Marle', 'Lucca', 'Robo', 'Frog', 'Ayla', 'Magus',
             'Epoch'
         ]
-        
+
+        # Archipelago (multiworld) needs a player name
+        self.player_name = ''
 
     def _jot_json(self):
         return {

@@ -94,44 +94,44 @@ def write_fragments_to_config(settings: rset.Settings,
     # Make a flags + chronosanity game config to get all assignable locations
     orig_flags = settings.gameflags
     settings.gameflags |= rset.GameFlags.CHRONOSANITY
-    game_config = logicfactory.getGameConfig(settings, config)
+    game_config = logicfactory.get_game_config(settings, config)
     settings.gameflags = orig_flags
 
-    loc_groups = game_config.locationGroups
+    loc_groups = game_config.location_groups
 
     LocationGroup = logictypes.LocationGroup
     Location = logictypes.Location
     TID = ctenums.TreasureID
 
     # These locations are not in Chronosanity but they can get fragments
-    desertLocations = LocationGroup("Sunken Desert", 0, lambda x: True)
+    desertLocations = LocationGroup("Sunken Desert", 0, logictypes.LogicRule())
     (
         desertLocations
-        .addLocation(Location(TID.SUNKEN_DESERT_B1_NE))
-        .addLocation(Location(TID.SUNKEN_DESERT_B1_NW))
-        .addLocation(Location(TID.SUNKEN_DESERT_B1_SE))
-        .addLocation(Location(TID.SUNKEN_DESERT_B1_SW))
-        .addLocation(Location(TID.SUNKEN_DESERT_B2_CENTER))
-        .addLocation(Location(TID.SUNKEN_DESERT_B2_E))
-        .addLocation(Location(TID.SUNKEN_DESERT_B2_N))
-        .addLocation(Location(TID.SUNKEN_DESERT_B2_NW))
-        .addLocation(Location(TID.SUNKEN_DESERT_B2_SE))
-        .addLocation(Location(TID.SUNKEN_DESERT_B2_SW))
+        .add_location(Location(TID.SUNKEN_DESERT_B1_NE))
+        .add_location(Location(TID.SUNKEN_DESERT_B1_NW))
+        .add_location(Location(TID.SUNKEN_DESERT_B1_SE))
+        .add_location(Location(TID.SUNKEN_DESERT_B1_SW))
+        .add_location(Location(TID.SUNKEN_DESERT_B2_CENTER))
+        .add_location(Location(TID.SUNKEN_DESERT_B2_E))
+        .add_location(Location(TID.SUNKEN_DESERT_B2_N))
+        .add_location(Location(TID.SUNKEN_DESERT_B2_NW))
+        .add_location(Location(TID.SUNKEN_DESERT_B2_SE))
+        .add_location(Location(TID.SUNKEN_DESERT_B2_SW))
     )
 
-    prisonLocations = LocationGroup("Guardia Prison", 0, lambda x: True)
+    prisonLocations = LocationGroup("Guardia Prison", 0, logictypes.LogicRule())
     (
         prisonLocations
-        .addLocation(Location(TID.GUARDIA_JAIL_CELL))
-        .addLocation(Location(TID.GUARDIA_JAIL_FRITZ))
-        .addLocation(Location(TID.GUARDIA_JAIL_FRITZ_STORAGE))
-        .addLocation(Location(TID.GUARDIA_JAIL_HOLE_1))
-        .addLocation(Location(TID.GUARDIA_JAIL_HOLE_2))
-        .addLocation(Location(TID.GUARDIA_JAIL_OMNICRONE_1))
-        .addLocation(Location(TID.GUARDIA_JAIL_OMNICRONE_2))
-        .addLocation(Location(TID.GUARDIA_JAIL_OMNICRONE_3))
-        .addLocation(Location(TID.GUARDIA_JAIL_OMNICRONE_4))
-        .addLocation(Location(TID.GUARDIA_JAIL_OUTER_WALL))
+        .add_location(Location(TID.GUARDIA_JAIL_CELL))
+        .add_location(Location(TID.GUARDIA_JAIL_FRITZ))
+        .add_location(Location(TID.GUARDIA_JAIL_FRITZ_STORAGE))
+        .add_location(Location(TID.GUARDIA_JAIL_HOLE_1))
+        .add_location(Location(TID.GUARDIA_JAIL_HOLE_2))
+        .add_location(Location(TID.GUARDIA_JAIL_OMNICRONE_1))
+        .add_location(Location(TID.GUARDIA_JAIL_OMNICRONE_2))
+        .add_location(Location(TID.GUARDIA_JAIL_OMNICRONE_3))
+        .add_location(Location(TID.GUARDIA_JAIL_OMNICRONE_4))
+        .add_location(Location(TID.GUARDIA_JAIL_OUTER_WALL))
     )
 
     loc_groups.append(desertLocations)
@@ -142,8 +142,8 @@ def write_fragments_to_config(settings: rset.Settings,
     # This is dangerous, but it should be OK since names are all generated
     # automatically.
     # TODO: write an __eq__ for locations that checks if the underlying
-    #       TreasureIDs are equal.  For now, we check getName() equality.
-    key_loc_names = [loc.getName() for loc in key_items]
+    #       TreasureIDs are equal.  For now, we check get_name() equality.
+    key_loc_names = [loc.get_name() for loc in key_items]
 
     # for name in key_loc_names:
     #     print(name)
@@ -151,15 +151,15 @@ def write_fragments_to_config(settings: rset.Settings,
     # print('****')
 
     avail_locs = [loc for loc in all_locs
-                  if loc.getName() not in key_loc_names]
+                  if loc.get_name() not in key_loc_names]
 
     # for x in avail_locs:
-    #     print(x.getName())
+    #     print(x.get_name())
 
     # print('****')
     num_fragments = settings.bucket_settings.num_fragments
     fragment_locs = random.sample(avail_locs, num_fragments)
 
     for x in fragment_locs:
-        x.setKeyItem(ctenums.ItemID.BUCKETFRAG)
-        x.writeKeyItem(config)
+        x.set_key_item(ctenums.ItemID.BUCKETFRAG)
+        x.write_key_item(config)
