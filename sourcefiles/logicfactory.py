@@ -13,16 +13,16 @@ import randoconfig as cfg
 
 
 #
-# The LogicFactory is used by the logic writer to get a GameConfig
-# object for the flags that the user selected.  The returned GameConfig
+# The LogicFactory is used by the logic writer to get a LogicConfig
+# object for the flags that the user selected.  The returned LogicConfig
 # object holds a list of all LocationGroups, KeyItems, and a configured
 # Game object.  These are used by the logic writer to handle key item
 # placement.
 #
 
-class GameConfig:
+class LogicConfig:
     """
-    The GameConfig class holds the locations and key items associated with a
+    The LogicConfig class holds the locations and key items associated with a
     game type.
     """
 
@@ -134,12 +134,10 @@ class GameConfig:
             if group.has_location(location):
                 return group
         return None
-
-
 # end GameLogic class
 
 
-class ChronosanityGameConfig(GameConfig):
+class ChronosanityLogicConfig(LogicConfig):
     """
     This class represents the game configuration for a
     standard Chronosanity game.
@@ -150,14 +148,13 @@ class ChronosanityGameConfig(GameConfig):
         self.charLocations = config.char_assign_dict
         self.earlyPendant = rset.GameFlags.FAST_PENDANT in settings.gameflags
         self.lockedChars = rset.GameFlags.LOCKED_CHARS in settings.gameflags
-        GameConfig.__init__(self, settings, config)
+        LogicConfig.__init__(self, settings, config)
         apply_epoch_fail(self)
 
     def init_locations(self):
         # Dark Ages
         # Mount Woe does not go away in the randomizer, so it
         # is being considered for key item drops.
-
         darkages_locations = \
             LocationGroup("Darkages", 30,
                           LogicRule()
@@ -667,10 +664,10 @@ class ChronosanityGameConfig(GameConfig):
             return key_item_list
 
 
-# end ChronosanityGameConfig class
+# end ChronosanityLogicConfig class
 
 
-class ChronosanityLostWorldsGameConfig(GameConfig):
+class ChronosanityLostWorldsLogicConfig(LogicConfig):
     """
     This class represents the game configuration for a
     Lost Worlds Chronosanity game.
@@ -678,7 +675,7 @@ class ChronosanityLostWorldsGameConfig(GameConfig):
 
     def __init__(self, settings: rset.Settings, config: cfg.RandoConfig):
         self.charLocations = config.char_assign_dict
-        GameConfig.__init__(self, settings, config)
+        LogicConfig.__init__(self, settings, config)
 
     def init_game(self):
         self.game = Game(self.settings, self.config)
@@ -863,10 +860,10 @@ class ChronosanityLostWorldsGameConfig(GameConfig):
         self.location_groups.append(sealed_locations)
 
 
-# end ChronosanityLostWorldsGameConfig class
+# end ChronosanityLostWorldsLogicConfig class
 
 
-def apply_epoch_fail(game_config: GameConfig):
+def apply_epoch_fail(game_config: LogicConfig):
     """
     Split and/or add flight requirements to group.  Add JoT to KI list.
     """
@@ -948,7 +945,7 @@ def apply_epoch_fail(game_config: GameConfig):
                     new_group.add_location(flight_loc)
                 new_groups.append(new_group)
             else:
-                group.access_rule = group.get_access_rule().add_requirement([ItemID.JETSOFTIME])
+                group.get_access_rule().add_requirement([ItemID.JETSOFTIME])
 
     game_config.location_groups.extend(new_groups)
 
@@ -976,7 +973,7 @@ def apply_epoch_fail(game_config: GameConfig):
         game_config.keyItemList.append(ItemID.JETSOFTIME)
 
 
-class NormalGameConfig(GameConfig):
+class NormalLogicConfig(LogicConfig):
     """
     This class represents the game configuration for a
     Normal game.
@@ -986,7 +983,7 @@ class NormalGameConfig(GameConfig):
         self.charLocations = config.char_assign_dict
         self.earlyPendant = rset.GameFlags.FAST_PENDANT in settings.gameflags
         self.lockedChars = rset.GameFlags.LOCKED_CHARS in settings.gameflags
-        GameConfig.__init__(self, settings, config)
+        LogicConfig.__init__(self, settings, config)
         apply_epoch_fail(self)
 
     def init_game(self):
@@ -1117,10 +1114,10 @@ class NormalGameConfig(GameConfig):
         self.location_groups.append(future_keys)
 
 
-# end NormalGameConfig class
+# end NormalLogicConfig class
 
 
-class LostWorldsGameConfig(GameConfig):
+class LostWorldsLogicConfig(LogicConfig):
     """
     This class represents the game configuration for a
     Lost Worlds game.
@@ -1128,7 +1125,7 @@ class LostWorldsGameConfig(GameConfig):
 
     def __init__(self, settings: rset.Settings, config: cfg.RandoConfig):
         self.charLocations = config.char_assign_dict
-        GameConfig.__init__(self, settings, config)
+        LogicConfig.__init__(self, settings, config)
 
     def init_game(self):
         self.game = Game(self.settings, self.config)
@@ -1176,10 +1173,10 @@ class LostWorldsGameConfig(GameConfig):
 # end LostWorldsGameCofig class
 
 
-class ChronosanityLegacyOfCyrusGameConfig(ChronosanityGameConfig):
+class ChronosanityLegacyOfCyrusLogicConfig(ChronosanityLogicConfig):
 
     def init_key_items(self):
-        ChronosanityGameConfig.init_key_items(self)
+        ChronosanityLogicConfig.init_key_items(self)
 
         unavail_char = \
             self.config.char_assign_dict[RecruitID.PROTO_DOME].held_char
@@ -1207,7 +1204,7 @@ class ChronosanityLegacyOfCyrusGameConfig(ChronosanityGameConfig):
 
     def init_locations(self):
 
-        ChronosanityGameConfig.init_locations(self)
+        ChronosanityLogicConfig.init_locations(self)
 
         # Remove all future groups.  Remove Ozzie's Fort because it is now
         # an endgame area.
@@ -1243,10 +1240,10 @@ class ChronosanityLegacyOfCyrusGameConfig(ChronosanityGameConfig):
         woe_group.access_rule = LogicRule().add_rule([ItemID.GATE_KEY])
 
 
-class LegacyOfCyrusGameConfig(NormalGameConfig):
+class LegacyOfCyrusLogicConfig(NormalLogicConfig):
 
     def init_key_items(self):
-        NormalGameConfig.init_key_items(self)
+        NormalLogicConfig.init_key_items(self)
 
         unavail_char = \
             self.config.char_assign_dict[RecruitID.PROTO_DOME].held_char
@@ -1356,15 +1353,15 @@ class LegacyOfCyrusGameConfig(NormalGameConfig):
             self.location_groups.append(fiona_shrine_locations)
 
 
-class IceAgeGameConfig(NormalGameConfig):
+class IceAgeLogicConfig(NormalLogicConfig):
     def __init__(self, settings: rset.Settings, config: cfg.RandoConfig):
-        NormalGameConfig.__init__(self, settings, config)
+        NormalLogicConfig.__init__(self, settings, config)
 
     def init_game(self):
-        NormalGameConfig.init_game(self)
+        NormalLogicConfig.init_game(self)
 
     def init_key_items(self):
-        NormalGameConfig.init_key_items(self)
+        NormalLogicConfig.init_key_items(self)
 
         # Remove other go-mode items.  These will be replaced with gear as
         # they would be in Chronosanity modes
@@ -1376,7 +1373,7 @@ class IceAgeGameConfig(NormalGameConfig):
             self.keyItemList.remove(item)
 
     def init_locations(self):
-        NormalGameConfig.init_locations(self)
+        NormalLogicConfig.init_locations(self)
 
         # The only change needed is that Woe will not be accessible except
         # when dreamstone, ayla, and dactyl char are present.  We keep the
@@ -1388,10 +1385,10 @@ class IceAgeGameConfig(NormalGameConfig):
         woe_group.access_rule = LogicRule().add_rule([ItemID.GATE_KEY, ItemID.DREAMSTONE, Characters.AYLA])
 
 
-class ChronosanityIceAgeGameConfig(ChronosanityGameConfig):
+class ChronosanityIceAgeLogicConfig(ChronosanityLogicConfig):
 
     def init_key_items(self):
-        ChronosanityGameConfig.init_key_items(self)
+        ChronosanityLogicConfig.init_key_items(self)
 
         # Remove other go-mode items.  These will be replaced with gear as
         # they would be in Chronosanity modes
@@ -1404,46 +1401,10 @@ class ChronosanityIceAgeGameConfig(ChronosanityGameConfig):
                 self.keyItemList.remove(item_id)
 
     def init_locations(self):
-        ChronosanityGameConfig.init_locations(self)
+        ChronosanityLogicConfig.init_locations(self)
 
         # For Chronosanity, just remove the Woe group.
         self.location_groups.remove(self.get_location_group('Darkages'))
-
-# TODO: Delete these
-# Note: Accessing MtWoe is the same as accessing EoT in current logic.
-#       This means you can grind for levels if you really need it.
-# def _can_access_giants_claw_vr(game: Game):
-#     return (
-#             game.has_key_item(ItemID.TOMAS_POP) and
-#             game.canAccessMtWoe()
-#     )
-#
-#
-# def _can_access_kings_trial_vr(game: Game):
-#     return (
-#             game.has_character(Characters.MARLE) and
-#             game.has_key_item(ItemID.PRISMSHARD) and
-#             game.canAccessMtWoe()
-#     )
-#
-#
-# def _can_access_fionas_shrine_vr(game: Game):
-#     return (
-#             game.has_character(Characters.ROBO) and
-#             game.canAccessMtWoe()
-#     )
-#
-#
-# def _can_access_northern_ruins_vr(game: Game):
-#     return game.has_key_item(ItemID.TOOLS)
-#
-#
-# def _can_access_cyrus_grave_vr(game: Game):
-#     return (
-#             _can_access_northern_ruins_vr(game) and
-#             game.has_character(Characters.FROG) and
-#             game.canAccessMtWoe()
-#     )
 
 
 _awesome_gear_dist = td.TreasureDist(
@@ -1451,16 +1412,16 @@ _awesome_gear_dist = td.TreasureDist(
 )
 
 
-class VanillaRandoGameConfig(NormalGameConfig):
+class VanillaRandoLogicConfig(NormalLogicConfig):
 
     def init_key_items(self):
-        NormalGameConfig.init_key_items(self)
+        NormalLogicConfig.init_key_items(self)
 
         self.keyItemList.append(ItemID.TOOLS)
         self.keyItemList.remove(ItemID.ROBORIBBON)
 
     def init_locations(self):
-        NormalGameConfig.init_locations(self)
+        NormalLogicConfig.init_locations(self)
 
         can_access_woe = LogicRule().add_rule([ItemID.PENDANT]).add_rule([ItemID.GATE_KEY])
 
@@ -1493,10 +1454,10 @@ class VanillaRandoGameConfig(NormalGameConfig):
         self.location_groups.append(cyrus_key)
 
 
-class ChronosanityVanillaRandoGameConfig(ChronosanityGameConfig):
+class ChronosanityVanillaRandoLogicConfig(ChronosanityLogicConfig):
 
     def init_key_items(self):
-        ChronosanityGameConfig.init_key_items(self)
+        ChronosanityLogicConfig.init_key_items(self)
 
         for i in range(5):
             self.keyItemList.append(ItemID.TOOLS)
@@ -1505,7 +1466,7 @@ class ChronosanityVanillaRandoGameConfig(ChronosanityGameConfig):
             self.keyItemList.remove(ItemID.ROBORIBBON)
 
     def init_locations(self):
-        ChronosanityGameConfig.init_locations(self)
+        ChronosanityLogicConfig.init_locations(self)
 
         can_access_woe = LogicRule().add_rule([ItemID.PENDANT]).add_rule([ItemID.GATE_KEY])
         giants_claw = self.get_location_group('Giantsclaw')
@@ -1534,16 +1495,16 @@ class ChronosanityVanillaRandoGameConfig(ChronosanityGameConfig):
             copy.deepcopy(can_access_woe).add_requirement([ItemID.TOOLS, Characters.FROG])
 
 
-def get_game_config(settings: rset.Settings, config: cfg.RandoConfig) -> GameConfig:
+def get_game_config(settings: rset.Settings, config: cfg.RandoConfig) -> LogicConfig:
     """
-    Get a GameConfig object based on randomizer flags.
-    The GameConfig object will have the correct locations,
+    Get a LogicConfig object based on randomizer flags.
+    The LogicConfig object will have the correct locations,
     initial key items, and game setup for the selected flags.
 
     :param settings: An rset.Settings object containing flag choices
     :param config: A cfg.RandoConfig object containing randomizer assignments
 
-    :return: A GameConfig object appropriate for the given flag set
+    :return: A LogicConfig object appropriate for the given flag set
     """
 
     # Maybe each game mode needs to supply its own logic setup function.
@@ -1557,28 +1518,28 @@ def get_game_config(settings: rset.Settings, config: cfg.RandoConfig) -> GameCon
 
     if chronosanity:
         if lost_worlds:
-            cfg_type = ChronosanityLostWorldsGameConfig
+            cfg_type = ChronosanityLostWorldsLogicConfig
         elif legacy_of_cyrus:
-            cfg_type = ChronosanityLegacyOfCyrusGameConfig
+            cfg_type = ChronosanityLegacyOfCyrusLogicConfig
         elif ice_age:
-            cfg_type = ChronosanityIceAgeGameConfig
+            cfg_type = ChronosanityIceAgeLogicConfig
         elif vanilla:
-            cfg_type = ChronosanityVanillaRandoGameConfig
+            cfg_type = ChronosanityVanillaRandoLogicConfig
         elif standard:
-            cfg_type = ChronosanityGameConfig
+            cfg_type = ChronosanityLogicConfig
         else:
             raise ValueError('Invalid Game Mode')
     else:
         if lost_worlds:
-            cfg_type = LostWorldsGameConfig
+            cfg_type = LostWorldsLogicConfig
         elif legacy_of_cyrus:
-            cfg_type = LegacyOfCyrusGameConfig
+            cfg_type = LegacyOfCyrusLogicConfig
         elif ice_age:
-            cfg_type = IceAgeGameConfig
+            cfg_type = IceAgeLogicConfig
         elif vanilla:
-            cfg_type = VanillaRandoGameConfig
+            cfg_type = VanillaRandoLogicConfig
         elif standard:
-            cfg_type = NormalGameConfig
+            cfg_type = NormalLogicConfig
         else:
             raise ValueError('Invalid Game Mode')
 

@@ -1,13 +1,24 @@
-import ctenums
-import ctstrings
 import io
 import json
+from typing import Optional
+
+import ctenums
+from ctenums import ItemID, CharID, LocID, RecruitID
+import ctevent
+import ctrom
+import ctstrings
+from eventcommand import EventCommand, Operation
+import logicfactory
 import logictypes
 import randosettings as rset
 import randoconfig as cfg
 
 
-def get_item_data(config: cfg.RandoConfig) -> list[dict[str, str]]:
+class CommandNotFoundException(Exception):
+    pass
+
+
+def _get_item_data(settings: rset.Settings, config: cfg.RandoConfig) -> list[dict[str, str]]:
     """
     Get item definitions for the multiworld config.
 
@@ -15,78 +26,293 @@ def get_item_data(config: cfg.RandoConfig) -> list[dict[str, str]]:
     to be used in the AP yaml file.  It also includes "Event" entries for the characters
     to be used in the logic where required.
 
+    :param settings: Randomizer settings object
     :param config: RandoConfig object to pull item data from.
     :return: List of item data entries
     """
     item_data = []
+    logic_config = logicfactory.get_game_config(settings, config)
+    available_key_items = logic_config.get_key_item_list()
 
     # Items
     for location in config.key_item_locations:
         key_item = location.get_key_item()
-        item_name = config.itemdb[key_item].get_name_as_str(True)
-        # TODO - Currently all KIs are classified as progression
-        #        May need to reclassify non-progression items like Jerky
-        item_data.append({
-            "name": item_name,
-            "id": key_item,
-            "classification": "progression"
-        })
+        # Lost Worlds adds character specific items after the initial logical placement.
+        # They won't be part of the available key items from the LogicConfig, so use that to
+        # filter out these items and keep the number of locations/items equal.
+        if key_item in available_key_items:
+            if key_item == ItemID.MASAMUNE_2:
+                # Grand Leon and HeroMedal are special cases.  The name in the DB can be different
+                # depending on game mode or gear rando.  Always use "Grand Leon" for multiworld output.
+                item_name = "Grand Leon"
+            elif key_item == ItemID.HERO_MEDAL:
+                item_name = "Hero Medal"
+            else:
+                item_name = config.itemdb[key_item].get_name_as_str(True)
 
-    # Add characters to the item array as events ("None" classification)
-    for recruit_spot in config.char_assign_dict.keys():
-        # TODO - Figure out character IDs.
-        #        For now just make them (0x100 + charID) to not conflict with items.
-        item_data.append({
-            "name": str(f"{config.char_assign_dict[recruit_spot].held_char}"),
-            "id": config.char_assign_dict[recruit_spot].held_char + 0x100,
-            "classification": "None"
-        })
+            # TODO: Count of 1 is ok for now until fragments are implemented
+            item_data.append({
+                "name": item_name,
+                "id": key_item,
+                "count": 1,
+                "classification": "progression"
+            })
 
     return item_data
 
 
-def get_access_rules(location: logictypes.Location):
+def _get_access_rules(logic_rule: logictypes.LogicRule, config: cfg.RandoConfig) -> list[list[str]]:
     """
-    Determine the access rules for a given location.
-    TODO: This is really hacky and should be a part of the actual placement logic
-          so that we don't have to maintain two different logic engines.
+    Convert the logic rule used for a location group into a multiworld format.
+
+    :param logic_rule: The logic rule from a location group
+    :param config: RandoConfig object used for item names
+    :return: Rule converted for multiworld
     """
-    pass
+    mw_rule = []
+    for rule in logic_rule.get_access_rule():
+        mw_req_list = []
+        for requirement in rule:
+            if requirement in ctenums.ItemID:
+                mw_req_list.append(config.itemdb[requirement].get_name_as_str(True))
+            else:
+                # Character requirement
+                mw_req_list.append(str(requirement))
+        mw_rule.append(mw_req_list)
+
+    return mw_rule
 
 
-def get_location_data(settings: rset.Settings, config: cfg.RandoConfig) -> list[dict[str, str]]:
+def _get_location_data(settings: rset.Settings, config: cfg.RandoConfig) -> list[dict[str, str]]:
     """
     Get location definitions for the multiworld config.
 
     :param settings: Randomizer settings object
-    :param config: RandoConfig object to pull item data from.
+    :param config: RandoConfig object to pull item data from
     :return: List of location data entries
     """
     location_data = []
+    logic_config = logicfactory.get_game_config(settings, config)
 
     # Add key item locations
     for location in config.key_item_locations:
         # TODO - Location IDs need to be unique across worlds.  Need to figure this out.
-        location_data.append({
-            "name": location.get_name(),
-            "id": 0,
-            "classification": "default",
-            "is_event:": False,
-            "access_rules:": get_access_rules(location)
-        })
-
+        location_group = logic_config.get_location_group_from_location(location)
+        # NOTE:
+        # It is possible for some character specific items to be put in chronosanity locations in a
+        # non-chronosanity Lost Worlds game.  This can cause location_group to come back as
+        # None since the location isn't part of the logic config.  Skip these spots
+        # so that critical items can't end up in unexpected locations.
+        if location_group is not None:
+            location_data.append({
+                "name": location.get_name(),
+                "id": location.get_treasure_id(),
+                "classification": "default",
+            })
 
     # Add character locations
     for recruit_spot in config.char_assign_dict.keys():
-        # TODO - Location IDs
-        location_data.append({
-            "name": str(f"{config.char_assign_dict[recruit_spot].held_char}"),
-            "id": 0,
-            "classification": "event",
-            "is_event:": True
-        })
+        logic_rule = logic_config.get_game().get_char_rule(recruit_spot)
+        if logic_rule is not None:
+            # TODO - Location IDs are just the recruit spot ID + 0x100 so it doesn't collide with
+            #        normal location numbers.  Same as above, need to figure the unique part out.
+            # TODO: Actually, I don't think the ID is used for event locations.  Double check this
+            #       and nuke the ID if we don't need it.
+            location_data.append({
+                "name": str(recruit_spot),
+                "id": int(recruit_spot) + 0x100,
+                "classification": "event",
+                "character": str(f"{config.char_assign_dict[recruit_spot].held_char}")
+            })
 
     return location_data
+
+
+def _get_victory_conditions(settings: rset.Settings, config: cfg.RandoConfig) -> list[list[str]]:
+    """
+    Determine the victory conditions and rules for this seed.
+
+    These will be used on the Archipelago side to create victory events for the spoiler log.
+
+    :param settings: RandoSettings object with game settings
+    :param config: RandoConfig object to pull item data from.
+    :return: List of rules for victory
+    """
+    # TODO: Bundle this into logic configs?  Gets a lot more complicated with objectives.
+    rules = []
+    if settings.game_mode in [rset.GameMode.STANDARD, rset.GameMode.VANILLA_RANDO]:
+        rules.append([ItemID.GATE_KEY, ItemID.DREAMSTONE, ItemID.RUBY_KNIFE])
+        rules.append([ItemID.PENDANT, ItemID.CLONE, ItemID.C_TRIGGER])
+        rules.append([ItemID.BENT_SWORD, ItemID.BENT_HILT, CharID.FROG])
+    elif settings.game_mode == rset.GameMode.LOST_WORLDS:
+        rules.append([ItemID.DREAMSTONE, ItemID.RUBY_KNIFE])
+        rules.append([ItemID.CLONE, ItemID.C_TRIGGER])
+    elif settings.game_mode == rset.GameMode.LEGACY_OF_CYRUS:
+        rules.append([ItemID.BENT_HILT, ItemID.BENT_SWORD, ItemID.MASAMUNE_2,
+                      CharID.FROG, CharID.MAGUS])
+    elif settings.game_mode == rset.GameMode.ICE_AGE:
+        rules.append([ItemID.GATE_KEY, ItemID.DREAMSTONE, CharID.AYLA])
+        dactyl_recruit = config.char_assign_dict[RecruitID.DACTYL_NEST]
+        if dactyl_recruit.held_char is not CharID.AYLA:
+            rules.append(dactyl_recruit.held_char)
+
+    # TODO: Bucket fragments
+
+    # convert lists of keys/characters into strings.
+    stringified_rules = []
+    for rule in rules:
+        temp = []
+        for requirement in rule:
+            if requirement in ItemID:
+                temp.append(config.itemdb[requirement].get_name_as_str(True))
+            else:
+                temp.append(str(requirement))
+        stringified_rules.append(temp)
+
+    return stringified_rules
+
+
+def _get_location_access_rules(settings: rset.Settings, config: cfg.RandoConfig) -> dict[str, list[list[str]]]:
+    """
+    Get a dictionary of access rules using the location name as a key.
+
+    :param settings: RandoSettings object with game settings
+    :param config: RandoConfig object to pull config data from
+    :return: Dictionary of access rules by location
+    """
+    logic_config = logicfactory.get_game_config(settings, config)
+
+    rules = {}
+    # Key item locations
+    for location in config.key_item_locations:
+        location_group = logic_config.get_location_group_from_location(location)
+        rules[location.get_name()] = _get_access_rules(location_group.get_access_rule(), config)
+
+    # Character recruitment locations
+    for recruit_spot in config.char_assign_dict.keys():
+        logic_rule = logic_config.get_game().get_char_rule(recruit_spot)
+        rules[str(recruit_spot)] = _get_access_rules(logic_rule, config)
+
+    return rules
+
+
+def _apply_zombor_flag_fix(ct_rom: ctrom.CTRom):
+    """
+    Move the flag that tracks the Zombor battle from before the battle
+    begins to after the battle ends.
+
+    This will ensure that players have to actually finish the Zombor check to
+    obtain or send the key item in multiworld.
+
+    :param ct_rom: ROM data to modify
+    """
+
+    # Get the duplicate of Zenan Bridge since this is always where the boss
+    # is fought now
+    script = ct_rom.script_manager.get_script(
+        ctenums.LocID.ZENAN_BRIDGE_BOSS
+    )
+
+    zombor_flag = EventCommand.assign_val_to_mem(0x02, 0x7F0101, 1)
+    pos: Optional[int] = script.find_exact_command(zombor_flag)
+
+    if pos is None:
+        raise CommandNotFoundException
+
+    script.delete_commands(pos, 1)
+
+    # Zombor fight should be the next battle command after the flag set.
+    pos, cmd = script.find_command([0xD8], pos)
+
+    if pos is None:
+        raise CommandNotFoundException
+
+    pos += len(cmd)
+    script.insert_commands(zombor_flag.to_bytearray(), pos)
+
+
+def _apply_melchior_flag_fix(ct_rom: ctrom.CTRom):
+    """
+    Add a flag for the Melchior check.
+
+    The Melchior check was previously tracked by reading 0x7F006D & 0x10,
+    which is a bit that gets reused for several Melchior appearances.
+    There is no dedicated memory flag for the sunstone turn in.  This function
+    will add a flag for this check that can be more accurately tracked.
+
+    :param ct_rom: ROM object to modify
+    """
+    script = ct_rom.script_manager.get_script(
+        ctenums.LocID.GUARDIA_REAR_STORAGE
+    )
+
+    # The Melchior bit is set after the King's Trial, allowing Melchior to appear
+    # in the guardia storage room.  It resets after the sunstone turn in.
+    #
+    # Find the command that resets the Melchior bit
+    melchior_bit_cmd = EventCommand.reset_bit(0x7F006D, 0x10)
+    pos: Optional[int] = script.find_exact_command(melchior_bit_cmd)
+
+    # Make sure we actually found the command
+    if pos is None:
+        raise CommandNotFoundException
+
+    # Insert a command to set the new flag bit.
+    new_flag_cmd = EventCommand.set_bit(0x7F001F, 0x80)
+    script.insert_commands(new_flag_cmd.to_bytearray(), pos)
+
+
+def _apply_item_delivery_script_changes(ct_rom: ctrom.CTRom):
+    """
+    Apply the item delivery script to every location where we want the
+    player to be able to receive items.
+
+    :param ct_rom: ROM data to modify
+    """
+
+    # These are the locations we don't want to be capable of delivering items.
+    location_exclusion_list = [LocID.LOAD_SCREEN, LocID.ENDING_SELECTOR]
+
+    ef = ctevent.EF
+    ec = ctevent.EC
+
+    # loop through all locations to add the item receive loop
+    # Skip location IDs in the exclusion list.
+    for location in LocID:
+        if location in location_exclusion_list:
+            continue
+
+        script = ct_rom.script_manager.get_script(location)
+
+        item_rec_str = "Received {item}!{null}"
+        item_rec_str_id = script.add_string(item_rec_str)
+
+        # TODO: Add a check for explore mode.  We don't want to toggle explore mode back on if it
+        #       is off for a cut scene or other reason when this event fires.
+        receive_function = ef()
+        (
+            receive_function
+            .add(ec.return_cmd())
+            .add(ec.generic_one_arg(0x87, 0x20))  # Set script speed slower to reduce potential lag
+            .set_label("item_receive_loop")
+            .add(ec.assign_mem_to_mem(0x7E298A, 0x7F03E0, 1))
+            .add_if(
+                ec.if_mem_op_value(0x7F03E0, Operation.NOT_EQUALS, 0, 1, 0),
+                ef()
+                .add(ec.generic_one_arg(0x87, 0x04))  # Speed up processing while receiving an item
+                .add(ec.set_explore_mode(False))
+                .add(ec.assign_mem_to_mem(0x7F03E0, 0x7F0200, 1))
+                .add(ec.generic_one_arg(0xC7, 0x7F0200))  # Add Item to inventory from memory
+                .add(ec.text_box(item_rec_str_id, False))
+                .add(ec.assign_val_to_mem(0, 0x7E298A, 1))  # Reset the item delivery memory
+                .add(ec.set_explore_mode(True))
+                .add(ec.generic_one_arg(0x87, 0x20))  # Back to slow mode
+                .jump_to_label(ec.jump_back(0), "item_receive_loop")
+            )
+        )
+
+        new_obj_id = script.append_empty_object()
+        script.set_function(new_obj_id, 0, receive_function)
 
 
 def generate_yaml_ap_config(settings: rset.Settings, config: cfg.RandoConfig) -> io.StringIO:
@@ -98,12 +324,17 @@ def generate_yaml_ap_config(settings: rset.Settings, config: cfg.RandoConfig) ->
 
     :param settings: RandoSettings object with game settings
     :param config: RandoConfig object to pull config data from
+    :return: StringIO object with archipelago config as yaml
     """
     ap_cfg_dict = {
         "game": "Chrono Trigger Jets of Time",
         "name": settings.player_name,
-        "items": get_item_data(config),
-        "locations": get_location_data(config)
+        "Chrono Trigger Jets of Time": {
+            "items": _get_item_data(settings, config),
+            "locations": _get_location_data(settings, config),
+            "rules": _get_location_access_rules(settings, config),
+            "victory": _get_victory_conditions(settings, config)
+        }
     }
 
     ap_cfg_json = io.StringIO()
@@ -111,37 +342,33 @@ def generate_yaml_ap_config(settings: rset.Settings, config: cfg.RandoConfig) ->
     return ap_cfg_json
 
 
-def apply_multiworld_rom_changes(config: cfg.RandoConfig):
+def apply_multiworld_changes(ct_rom: ctrom.CTRom):
     """
-    Apply the multiworld ROM changes to allow items to be given to the player.
+    Apply the multiworld ROM changes to allow items to be given to the player as
+    well as several minor fixes to improve multiworld tracking.
 
-    :param config: RandoConfig object
+    :param ct_rom: ROM data to modify
     """
+    # TODO: add unique value to RAM for ROM validation
+    _apply_zombor_flag_fix(ct_rom)
+    _apply_melchior_flag_fix(ct_rom)
+    _apply_item_delivery_script_changes(ct_rom)
 
-    # Replace all placed key items with APItems.
-    for location in config.key_item_locations:
-        location.set_key_item(ctenums.ItemID.APITEM)
 
-
-def generate_multiworld_config(settings: rset.Settings, config: cfg.RandoConfig):
+def write_multiworld_to_config(settings: rset.Settings, config: cfg.RandoConfig):
     """
-    Top level function to convert this game into a multiworld ready seed.
+    Apply multiworld changes to the game config.
+
+    :param settings: Settings object so we can check game flags
+    :param config: Config object to update for multiworld
     """
-    #if rset.GameFlags.MULTIWORLD not in settings.gameflags:
-    #    return
+    if rset.GameFlags.MULTIWORLD not in settings.gameflags:
+        return
 
     # Create an item to be used as a multiworld placeholder
     config.itemdb[ctenums.ItemID.APITEM].name = \
         ctstrings.CTNameString.from_string(' APItem', 0xB)
 
-    # Make a yaml file with game config data for Archipelago to consume.
-    temp = generate_yaml_ap_config(settings, config)
-    print(temp.getvalue())
-
-    # Apply multiworld specific ROM changes
-    #apply_multiworld_rom_changes(config)
-
-    # TODO: temp stuff to generate an item list
-    #item_dict = {}
-    #for item in ctenums.ItemID:
-    #    item_dict[config.itemdb[item].get_name_as_str(True)] = item.value
+    # Replace all placed key items with APItems.
+    for location in config.key_item_locations:
+        location.set_key_item(ctenums.ItemID.APITEM)

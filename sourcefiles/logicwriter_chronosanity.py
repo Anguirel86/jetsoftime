@@ -103,7 +103,7 @@ def getShuffledKeyItemList(weightedList):
 #
 # Randomly place key items.
 #
-# param: gameConfig A GameConfig object with the configuration information
+# param: gameConfig A LogicConfig object with the configuration information
 #                   necessary to place keys for the selected game type
 #
 # return: A tuple containing:
@@ -141,12 +141,12 @@ def determineKeyItemPlacement(gameConfig):
 #
 # param: chosenLocations - List of locations already chosen for key items
 # param: remainingKeyItems - List of key items remaining to be placed
-# param: gameConfig - GameConfig object used to determine logic.  In particular
+# param: gameConfig - LogicConfig object used to determine logic.  In particular
 #                     this contains a Game object which determines the logic
-#                     while the GameConfig itself has rules for how the keyItem
+#                     while the LogicConfig itself has rules for how the keyItem
 #                     items may change over time.
 # TODO:  Should this pass two parameters? Game and update_key_items function?
-#        It's weird using the Game member of GameConfig.
+#        It's weird using the Game member of LogicConfig.
 #
 # return: A tuple containing:
 #             A Boolean indicating whether or not key item placement was

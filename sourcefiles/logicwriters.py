@@ -24,10 +24,10 @@ class KeyItemFiller(typing.Protocol):
 
     def get_key_item_locations(
             self,
-            game_config: logicfactory.GameConfig
+            game_config: logicfactory.LogicConfig
     ) -> list[_LocType]:
         '''
-        Return a key item assignment for the given GameConfig
+        Return a key item assignment for the given LogicConfig
         '''
         pass
 
@@ -42,7 +42,7 @@ class RandomRejectionFiller:
 
     def fill_key_item_locations(
             self,
-            game_config: logicfactory.GameConfig
+            game_config: logicfactory.LogicConfig
     ) -> list[_LocType]:
         '''
         Randomly fill in the key items until a valid configuration is reached.
@@ -88,7 +88,7 @@ class ALTTPRWeightedFiller:
 
     def fill_key_item_locations(
             self,
-            game_config: logicfactory.GameConfig
+            game_config: logicfactory.LogicConfig
     ) -> list[_LocType]:
         '''
         Implement a Weighted version of ALTTPR's AssumedFiller algorithm
@@ -154,7 +154,7 @@ class ALTTPRWeightedFiller:
         return assigned_locations
 
 
-def reweigh_location_groups(game_config: logicfactory.GameConfig):
+def reweigh_location_groups(game_config: logicfactory.LogicConfig):
     '''
     Use a standarized weighing scheme for LocationGroups.
     '''
@@ -197,7 +197,7 @@ def reweigh_location_groups(game_config: logicfactory.GameConfig):
         if name == 'FutureOpen':
             group.weight = 2*WEIGHT_PER_KI + 2*WEIGHT_PER_BOX
         group.weight_decay = lambda x: int(x * 0.2)
-            
+
 
     early_ki_spots = [
         'Fionashrine', 'OpenKeys',
@@ -249,7 +249,7 @@ class ALTTPRFiller:
 
     def fill_key_item_locations(
             self,
-            game_config: logicfactory.GameConfig
+            game_config: logicfactory.LogicConfig
     ) -> list[_LocType]:
         '''
         Get key item locations using ALTTPR's AssumedFiller's algorithm.
@@ -394,13 +394,13 @@ class ChronosanityFiller:
     #
     # Randomly place key items.
     #
-    # param: gameConfig A GameConfig object with the configuration information
+    # param: gameConfig A LogicConfig object with the configuration information
     #                   necessary to place keys for the selected game type
     #
     # return: A list of locations with key items assigned.
     #
     # Raises ImpossibleConfigurationException if not successful.
-    def fill_key_item_locations(self, gameConfig: logicfactory.GameConfig):
+    def fill_key_item_locations(self, gameConfig: logicfactory.LogicConfig):
         self.locationGroups = gameConfig.get_locations()
         remainingKeyItems = gameConfig.get_key_item_list()
         chosenLocations = []
@@ -436,13 +436,13 @@ class ChronosanityFiller:
     #
     # param: chosenLocations - List of locations already chosen for key items
     # param: remainingKeyItems - List of key items remaining to be placed
-    # param: gameConfig - GameConfig object used to determine logic.
+    # param: gameConfig - LogicConfig object used to determine logic.
     #                     In particular this contains a Game object which
-    #                     determines the logic while the GameConfig itself
+    #                     determines the logic while the LogicConfig itself
     #                     has rules for how the keyItem items may change over
     #                     time.
     # TODO:  Should this passtwo parameters? Game and update_key_items function?
-    #        It's weird using the Game member of GameConfig.
+    #        It's weird using the Game member of LogicConfig.
     #
     # return: A tuple containing:
     #             A Boolean indicating whether or not key item placement was
@@ -453,7 +453,7 @@ class ChronosanityFiller:
             self,
             chosenLocations: list[_LocType],
             remainingKeyItems: list[ctenums.ItemID],
-            gameConfig: logicfactory.GameConfig
+            gameConfig: logicfactory.LogicConfig
     ) -> typing.Tuple[bool, list[_LocType]]:
         if len(remainingKeyItems) == 0:
             # We've placed all key items.  This is our breakout condition
@@ -518,12 +518,12 @@ class ChronosanityFiller:
 # end determineKeyItemPlacement_impl recursive function
 
 
-# These maybe should be methods of logicfactory.GameConfig?
+# These maybe should be methods of logicfactory.LogicConfig?
 def is_placement_valid(
-        game_config: logicfactory.GameConfig
+        game_config: logicfactory.LogicConfig
 ) -> bool:
     '''
-    Determines whether all key items are reachable in a GameConfig.
+    Determines whether all key items are reachable in a LogicConfig.
     '''
     key_items_list = list(set(game_config.get_key_item_list()))
     accessible_keys = get_collectable_key_items(game_config)
@@ -535,7 +535,7 @@ def is_placement_valid(
 
 
 def get_available_location_groups(
-        game_config: logicfactory.GameConfig,
+        game_config: logicfactory.LogicConfig,
         game: logictypes.Game,
         assigned_locs: list[_LocType]
 ) -> list[logictypes.LocationGroup]:
@@ -557,7 +557,7 @@ def get_available_location_groups(
 
 
 def get_available_locations(
-        game_config: logicfactory.GameConfig,
+        game_config: logicfactory.LogicConfig,
         game: logictypes.Game,
         assigned_locs: list[_LocType]
 ) -> list[_LocType]:
@@ -577,7 +577,7 @@ def get_available_locations(
 
 
 def get_collectable_key_items(
-        game_config: logicfactory.GameConfig
+        game_config: logicfactory.LogicConfig
 ) -> typing.Iterable[ctenums.ItemID]:
     '''
     Traverse the game config to determine what can be collected.
@@ -656,7 +656,7 @@ def commitKeyItems(settings: rset.Settings,
                 if location.get_key_item() in (None,
                                                ctenums.ItemID.NONE,
                                                ctenums.ItemID.MOP):
-                    location.writeRandomItem(config)
+                    location.write_random_item(config)
 
                 # Always list the BaselineLocations for spoiler purposes
                 additional_locs.append(location)
@@ -675,7 +675,7 @@ def get_proof_string_from_settings_config(
 
 
 def get_proof_string(
-        game_config: logicfactory.GameConfig
+        game_config: logicfactory.LogicConfig
 ) -> str:
     '''
     Get string of 'spheres' of access.  Also prints inacccessibles.
@@ -803,7 +803,7 @@ def get_proof_string(
 
 
 def get_assignment_string(
-        game_config: logicfactory.GameConfig
+        game_config: logicfactory.LogicConfig
         ) -> str:
     '''
     Gets a human-readable version of the key item assignment in game_config.
@@ -828,7 +828,7 @@ def get_assignment_string(
 
 
 def make_assignment(
-        game_config: logicfactory.GameConfig,
+        game_config: logicfactory.LogicConfig,
         assignment: typing.Iterable[_LocType]
         ):
     '''

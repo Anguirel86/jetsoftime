@@ -190,7 +190,7 @@ class Randomizer:
         bucketfragment.write_fragments_to_config(self.settings, self.config)
 
         # Archipelago (multiworld)
-        multiworld.generate_multiworld_config(self.settings, self.config)
+        multiworld.write_multiworld_to_config(self.settings, self.config)
 
         # Omen elevator
         self.__update_key_item_descs()
@@ -868,6 +868,7 @@ class Randomizer:
         lost_worlds = rset.GameMode.LOST_WORLDS == mode
         vanilla = rset.GameMode.VANILLA_RANDO == mode
         epoch_fail = rset.GameFlags.EPOCH_FAIL in flags
+        multiworld_flag = rset.GameFlags.MULTIWORLD in flags
 
         if dup_chars and not lost_worlds:
             # Lets Spekkio give magic properly to duplicates
@@ -1452,6 +1453,9 @@ class Randomizer:
             # function can't work.  It's ok because bucket should be disabled
             # in LW.
             bucketfragment.set_bucket_function(ctrom, settings)
+
+        if rset.GameFlags.MULTIWORLD in flags:
+            multiworld.apply_multiworld_changes(ctrom)
 
     @classmethod
     def __apply_cosmetic_patches(cls, ctrom: CTRom,

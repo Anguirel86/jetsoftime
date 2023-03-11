@@ -5,6 +5,8 @@ from ctenums import ItemID, CharID, RecruitID, TreasureID
 import treasuredata as td
 import randosettings as rset
 import randoconfig as cfg
+
+
 #
 # This file holds various classes/types used by the logic placement code.
 #
@@ -107,7 +109,7 @@ class Game:
         self.characters.clear()
 
         if rset.GameFlags.STARTERS_SUFFICIENT in self.settings.gameflags and \
-           self.settings.game_mode == rset.GameMode.STANDARD:
+                self.settings.game_mode == rset.GameMode.STANDARD:
             self.add_character(
                 self.char_locations[RecruitID.STARTER_1].held_char
             )
@@ -118,7 +120,7 @@ class Game:
             # You have to add the other characters eventually or else the
             # logic will stall out.
             if self._can_access_black_omen() and self._can_access_tyrano_lair() and \
-               self.has_key_item(ItemID.RUBY_KNIFE):
+                    self.has_key_item(ItemID.RUBY_KNIFE):
                 self.add_character(
                     self.char_locations[RecruitID.CATHEDRAL].held_char
                 )
@@ -155,7 +157,59 @@ class Game:
             self.add_character(
                 self.char_locations[RecruitID.FROGS_BURROW].held_char
             )
+
     # end update_available_characters function
+
+    def get_char_rule(self, spot: RecruitID) -> typing.Union[LogicRule, None]:
+        """
+        Get a logic rule for the given recruit spot.
+
+        Currently, just used for multiworld.
+
+        :param spot: Character recruit location to generate a rule for
+        :return: LogicRule for the given recruit spot
+        """
+        sphere0 = [RecruitID.STARTER_1, RecruitID.STARTER_2]
+
+        # Lost Worlds does not allow access to Cath, Castle, or Burrow.  Return None.
+        if self.lost_worlds:
+            if spot in [RecruitID.CASTLE, RecruitID.CATHEDRAL, RecruitID.FROGS_BURROW]:
+                return None
+        else:
+            sphere0.extend([RecruitID.CATHEDRAL, RecruitID.CASTLE])
+
+        # If this is a free spot return an empty logic rule
+        if spot in sphere0:
+            return LogicRule()
+
+        # Frog's Burrow is always gated by hilt/blade
+        if spot == RecruitID.FROGS_BURROW:
+            return LogicRule().add_rule([ItemID.BENT_HILT, ItemID.BENT_SWORD])
+
+        # Dactyl nest is open from the start in LW, but needs Gate Key in normal mode.
+        # Additionally, the Locked Chars flag adds a Dreamstone requirement
+        if spot == RecruitID.DACTYL_NEST:
+            rule = LogicRule()
+            if not self.lost_worlds:
+                rule.add_rule([ItemID.GATE_KEY])
+
+            if self.locked_chars:
+                rule.add_requirement([ItemID.DREAMSTONE])
+
+            return rule
+
+        # Proto Dome is open from the start in LW but needs Pendant in normal mode.
+        # The Locked Chars flag adds a factory requirement, but no other items are needed.
+        # Proto Dome is also unavailable in Legacy of Cyrus mode
+        if spot == RecruitID.PROTO_DOME:
+            if self.settings.game_mode == rset.GameMode.LEGACY_OF_CYRUS:
+                return None
+
+            rule = LogicRule()
+            if not self.lost_worlds:
+                rule.add_rule([ItemID.PENDANT])
+
+            return rule
 
     def _can_access_dactyl_character(self):
         # If character locking is on, dreamstone is required to get the
@@ -173,7 +227,7 @@ class Game:
 
     def _can_access_tyrano_lair(self):
         return self._can_access_prehistory() and \
-            self.has_key_item(ItemID.DREAMSTONE)
+               self.has_key_item(ItemID.DREAMSTONE)
 
     def _has_masamune(self):
         return (self.has_key_item(ItemID.BENT_HILT) and
@@ -190,9 +244,9 @@ class LogicRule:
     """
     This class holds logical access rules for a LocationGroup.
     """
+
     def __init__(self):
-        self.rules = []
-        pass
+        self._rules = []
 
     def add_rule(self, rule: list[typing.Union[ItemID, CharID]]):
         """
@@ -202,26 +256,29 @@ class LogicRule:
         :param rule: List of items or characters needed to access a location
         :return: A reference to this object
         """
-        self.rules.append(rule)
+        self._rules.append(rule)
         return self
 
-    def get_multiworld_rule(self):
+    def get_access_rule(self) -> list[list[typing.Union[ItemID, CharID]]]:
         """
-        Get this access rule in a format suitable for the multiworld yaml.
-        """
-        pass
+        Get the access requirements in this rule.
 
-    def add_requirement(self, new_rule: list[typing.Union[ItemID, CharID]]):
+        :return: List of access requirements
+        """
+        return self._rules
+
+    def add_requirement(self, new_rule: list[typing.Union[ItemID, CharID]]) -> LogicRule:
         """
         Extend an existing rule with a new set of requirements.
 
         :param new_rule: new rule to append to the existing rules
         """
-        if len(self.rules) == 0:
+        if len(self._rules) == 0:
             self.add_rule(new_rule)
         else:
-            for rule in self.rules:
+            for rule in self._rules:
                 rule.extend(new_rule)
+        return self
 
     def __call__(self, game: Game) -> bool:
         """
@@ -230,16 +287,16 @@ class LogicRule:
         :param game: Game object with current game state
         :return: True if the location is accessible, false if not
         """
-        if len(self.rules) == 0:
+        if len(self._rules) == 0:
             # Empty rules list means this is a sphere 0 check
             return True
 
-        for rule in self.rules:
+        for rule in self._rules:
 
             can_access = True
             for requirement in rule:
-                has_char = game.has_character(requirement) if type(requirement) == type(CharID) else False
-                has_key = game.has_key_item(requirement) if type(requirement) == type(ItemID) else False
+                has_char = game.has_character(requirement) if requirement in CharID else False
+                has_key = game.has_key_item(requirement) if requirement in ItemID else False
                 if not (has_char or has_key):
                     can_access = False
                     break
@@ -302,6 +359,14 @@ class Location:
         """
         return self.treasure_id == treasure_id
 
+    def get_treasure_id(self) -> TreasureID:
+        """
+        Get the treasure ID used by this location.
+
+        :return: TreasureID for this location
+        """
+        return self.treasure_id
+
     def write_key_item(self, config: cfg.RandoConfig):
         """
         Write the key item set to this location to a RandoConfig object
@@ -318,6 +383,7 @@ class Location:
                        treasure assignment dictionary
         """
         return config.treasure_assign_dict[self.treasure_id].held_item
+
 
 # End Location class
 
@@ -373,6 +439,8 @@ class BaselineLocation(Location):
         """
         config.treasure_assign_dict[self.treasure_id].held_item = treasure
         self.set_key_item(treasure)
+
+
 # End BaselineLocation class
 
 
@@ -387,6 +455,7 @@ class LinkedLocation:
     to the linked locations.
     Just make it implement the same behavior as Location.
     """
+
     def __init__(self, location1: Location, location2: Location):
         self.location1 = location1
         self.location2 = location2
@@ -455,6 +524,19 @@ class LinkedLocation:
         else:
             return item1
 
+    def get_treasure_id(self):
+        """
+        Get the treasure ID for the location.
+
+        This location technically has two treasure IDs, but either one will give the same item.
+        This is currently just used for multiworld, which doesn't have a concept of linked locations, so
+        returning the first treasure ID should be OK, though it will result in the pyramid always
+        showing the item in the left chest.
+
+        :return: Treasure ID of the first location in this linked pair
+        """
+        return self.location1.get_treasure_id()
+
     def has_tid(self, treasure_id: TreasureID) -> bool:
         """
         Determine whether the location holds the given TID.
@@ -464,6 +546,8 @@ class LinkedLocation:
         """
         return (self.location1.has_tid(treasure_id) or
                 self.location2.has_tid(treasure_id))
+
+
 # end LinkedLocation class
 
 
