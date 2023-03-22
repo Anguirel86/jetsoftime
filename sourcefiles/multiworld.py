@@ -12,10 +12,24 @@ import logicfactory
 import logictypes
 import randosettings as rset
 import randoconfig as cfg
+from freespace import FSWriteType
 
 
 class CommandNotFoundException(Exception):
     pass
+
+
+# These values are used when writing player info that will be used
+# to validate the ROM in the multiworld client.
+# 32 bytes reserved
+#   - 16 character name limit
+#   - 2 characters to glue an "AP" on the front
+#   - 3 bytes for version information
+#   - 11 bytes reserved in case we ever need it
+MULTIWORLD_ID_ADDRESS = 0x5E0000
+MULTIWORLD_ID_SIZE = 32
+PLAYER_NAME_SIZE = 16
+VERSION = bytes([0, 0, 1])
 
 
 def _get_item_data(settings: rset.Settings, config: cfg.RandoConfig) -> list[dict[str, str]]:
@@ -93,17 +107,19 @@ def _get_location_data(settings: rset.Settings, config: cfg.RandoConfig) -> list
     """
     location_data = []
     logic_config = logicfactory.get_game_config(settings, config)
+    key_items = logic_config.get_key_item_list()
 
     # Add key item locations
     for location in config.key_item_locations:
         # TODO - Location IDs need to be unique across worlds.  Need to figure this out.
         location_group = logic_config.get_location_group_from_location(location)
+        valid_key = location.get_key_item() in key_items
         # NOTE:
         # It is possible for some character specific items to be put in chronosanity locations in a
         # non-chronosanity Lost Worlds game.  This can cause location_group to come back as
         # None since the location isn't part of the logic config.  Skip these spots
         # so that critical items can't end up in unexpected locations.
-        if location_group is not None:
+        if location_group is not None and valid_key:
             location_data.append({
                 "name": location.get_name(),
                 "id": location.get_treasure_id(),
@@ -191,7 +207,9 @@ def _get_location_access_rules(settings: rset.Settings, config: cfg.RandoConfig)
     # Character recruitment locations
     for recruit_spot in config.char_assign_dict.keys():
         logic_rule = logic_config.get_game().get_char_rule(recruit_spot)
-        rules[str(recruit_spot)] = _get_access_rules(logic_rule, config)
+        if logic_rule is not None:
+            # Skip unavailable locations (like Cathedral in Lost Worlds)
+            rules[str(recruit_spot)] = _get_access_rules(logic_rule, config)
 
     return rules
 
@@ -285,10 +303,13 @@ def _apply_item_delivery_script_changes(ct_rom: ctrom.CTRom):
         script = ct_rom.script_manager.get_script(location)
 
         item_rec_str = "Received {item}!{null}"
-        item_rec_str_id = script.add_string(item_rec_str)
+        item_rec_ct_str = ctstrings.CTString.from_str(item_rec_str)
+        item_rec_ct_str.compress()
+        item_rec_str_id = script.add_string(item_rec_ct_str)
 
         # TODO: Add a check for explore mode.  We don't want to toggle explore mode back on if it
         #       is off for a cut scene or other reason when this event fires.
+        # TODO: Increment received item counter (0x7E287D)?  Not in script memory.  How to do this?
         receive_function = ef()
         (
             receive_function
@@ -305,6 +326,7 @@ def _apply_item_delivery_script_changes(ct_rom: ctrom.CTRom):
                 .add(ec.generic_one_arg(0xC7, 0x7F0200))  # Add Item to inventory from memory
                 .add(ec.text_box(item_rec_str_id, False))
                 .add(ec.assign_val_to_mem(0, 0x7E298A, 1))  # Reset the item delivery memory
+                .add(ec.assign_val_to_mem(0, 0x7F03E0, 1))
                 .add(ec.set_explore_mode(True))
                 .add(ec.generic_one_arg(0x87, 0x20))  # Back to slow mode
                 .jump_to_label(ec.jump_back(0), "item_receive_loop")
@@ -342,22 +364,36 @@ def generate_yaml_ap_config(settings: rset.Settings, config: cfg.RandoConfig) ->
     return ap_cfg_json
 
 
-def apply_multiworld_changes(ct_rom: ctrom.CTRom):
+def apply_multiworld_changes(ct_rom: ctrom.CTRom, settings: rset.Settings, config: cfg.RandoConfig):
     """
     Apply the multiworld ROM changes to allow items to be given to the player as
     well as several minor fixes to improve multiworld tracking.
 
     :param ct_rom: ROM data to modify
+    :param settings: Randomizer settings object
+    :param config: Randomizer configuration object
     """
-    # TODO: add unique value to RAM for ROM validation
     _apply_zombor_flag_fix(ct_rom)
     _apply_melchior_flag_fix(ct_rom)
     _apply_item_delivery_script_changes(ct_rom)
+
+    # Replace all placed key items with APItems.
+    # Skip items that are not part of the key item list for this LogicConfig.
+    # ie. Grand Leon or Hero Medal in a Lost Worlds game.
+    logic_config = logicfactory.get_game_config(settings, config)
+    available_key_items = logic_config.get_key_item_list()
+
+    for location in config.key_item_locations:
+        if location.get_key_item() in available_key_items:
+            location.set_key_item(ctenums.ItemID.APITEM)
+            location.write_key_item(config)
 
 
 def write_multiworld_to_config(settings: rset.Settings, config: cfg.RandoConfig):
     """
     Apply multiworld changes to the game config.
+
+    NOTE: This must be called after item placement has occurred.
 
     :param settings: Settings object so we can check game flags
     :param config: Config object to update for multiworld
@@ -369,6 +405,36 @@ def write_multiworld_to_config(settings: rset.Settings, config: cfg.RandoConfig)
     config.itemdb[ctenums.ItemID.APITEM].name = \
         ctstrings.CTNameString.from_string(' APItem', 0xB)
 
-    # Replace all placed key items with APItems.
-    for location in config.key_item_locations:
-        location.set_key_item(ctenums.ItemID.APITEM)
+    yaml_data = generate_yaml_ap_config(settings, config)
+    with open("multi_data.yaml", "w") as f:
+        f.write(yaml_data.getvalue())
+
+
+def reserve_free_space(ct_rom: ctrom.CTRom, settings: rset.Settings):
+    """
+    Reserve free space in the ROM to write data used to identify the user
+    in a multiworld game.
+
+    :param ct_rom: ROM object to reserve free space
+    :param settings: Settings object
+    :raises ValueError: When the multiworld player data address is not free space on the ROM
+    """
+    block = (MULTIWORLD_ID_ADDRESS, MULTIWORLD_ID_SIZE)
+    space_manager = ct_rom.script_manager.fsrom.space_manager
+
+    # Make sure that something else didn't sneak in and take our address!
+    # TODO: Apparently this function doesn't work?
+    #if not space_manager.is_block_free(block):
+    #    raise ValueError("Multiworld player data is not free space!")
+
+    data = bytearray(MULTIWORLD_ID_SIZE)
+    data.extend("AP".encode('ascii'))
+    data.extend(VERSION)
+    name = settings.player_name
+    if len(name) > PLAYER_NAME_SIZE:
+        name = name[0:16]
+    data.extend(name.encode('ascii'))
+
+    # write the ID information to the ROM
+    ct_rom.rom_data.seek(MULTIWORLD_ID_ADDRESS)
+    ct_rom.rom_data.write(data, FSWriteType.MARK_USED)

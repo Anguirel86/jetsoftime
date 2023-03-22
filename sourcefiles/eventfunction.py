@@ -395,6 +395,8 @@ class EventFunction:
 
         self.__set_label(label, pos)
 
+        return self
+
     def jump_to_label(self, event_command: EventCommand, label: str):
         jump_cmds = (
             EventCommand.fwd_jump_commands +

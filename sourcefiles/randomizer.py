@@ -100,6 +100,10 @@ class Randomizer:
         if self.settings is None:
             raise NoSettingsException
 
+        # TODO: Forcing multiworld for testing
+        self.settings.gameflags = self.settings.gameflags | rset.GameFlags.MULTIWORLD
+        self.settings.player_name = "Anguirel2"
+
         rand.seed(self.settings.seed)
 
         if rset.GameFlags.MYSTERY in self.settings.gameflags:
@@ -789,6 +793,12 @@ class Randomizer:
         #        Into patch.ips to improve generation speed.
         self.__apply_basic_patches(self.out_rom, self.settings)
 
+        # Multiworld needs some ROM space for the client to validate the ROM as part
+        # of a multiworld game. Reserve that space here right after the basic patches
+        # are applied so that we can guarantee we can always get the same space.
+        if rset.GameFlags.MULTIWORLD in self.settings.gameflags:
+            multiworld.reserve_free_space(self.out_rom, self.settings)
+
         self.__apply_settings_patches(self.out_rom, self.settings)
 
         # This makes copies of heckran cave passagesways, king's trial,
@@ -868,7 +878,6 @@ class Randomizer:
         lost_worlds = rset.GameMode.LOST_WORLDS == mode
         vanilla = rset.GameMode.VANILLA_RANDO == mode
         epoch_fail = rset.GameFlags.EPOCH_FAIL in flags
-        multiworld_flag = rset.GameFlags.MULTIWORLD in flags
 
         if dup_chars and not lost_worlds:
             # Lets Spekkio give magic properly to duplicates
@@ -931,6 +940,12 @@ class Randomizer:
 
         # Enable NG+ by defeating Lavos without doing Omen.
         self.__lavos_ngplus()
+
+        # Handle multiworld changes. Must be done before writing config to ROM due to
+        # updating all key item locations with the new AP item. Must also be done after
+        # the map mangler adds the new Zombor map.
+        if rset.GameFlags.MULTIWORLD in flags:
+            multiworld.apply_multiworld_changes(self.out_rom, self.settings, self.config)
 
         # Everything prior was purely based on settings, not the randomization.
         # Now, write the information from the config to the rom.
@@ -1454,8 +1469,6 @@ class Randomizer:
             # in LW.
             bucketfragment.set_bucket_function(ctrom, settings)
 
-        if rset.GameFlags.MULTIWORLD in flags:
-            multiworld.apply_multiworld_changes(ctrom)
 
     @classmethod
     def __apply_cosmetic_patches(cls, ctrom: CTRom,
