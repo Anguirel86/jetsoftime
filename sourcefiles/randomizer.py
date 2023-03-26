@@ -100,10 +100,6 @@ class Randomizer:
         if self.settings is None:
             raise NoSettingsException
 
-        # TODO: Forcing multiworld for testing
-        self.settings.gameflags = self.settings.gameflags | rset.GameFlags.MULTIWORLD
-        self.settings.player_name = "Anguirel2"
-
         rand.seed(self.settings.seed)
 
         if rset.GameFlags.MYSTERY in self.settings.gameflags:

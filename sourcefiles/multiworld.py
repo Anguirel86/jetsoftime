@@ -46,15 +46,24 @@ def _get_item_data(settings: rset.Settings, config: cfg.RandoConfig) -> list[dic
     """
     item_data = []
     logic_config = logicfactory.get_game_config(settings, config)
-    available_key_items = logic_config.get_key_item_list()
 
     # Items
     for location in config.key_item_locations:
         key_item = location.get_key_item()
         # Lost Worlds adds character specific items after the initial logical placement.
-        # They won't be part of the available key items from the LogicConfig, so use that to
-        # filter out these items and keep the number of locations/items equal.
-        if key_item in available_key_items:
+        # Filter these out if it is not a chronosanity seed so that we don't end up with
+        # key items in locations outside the expected baseline logic locations.
+        #
+        # This will allow extra items to be added in cases like Legacy of Cyrus where there are
+        # more locations than key items, though the item will be some piece of gear and will
+        # show up on a normal key item location.
+        valid_key = True
+        if settings.game_mode == rset.GameMode.LOST_WORLDS and \
+                rset.GameFlags.CHRONOSANITY not in settings.gameflags:
+            if location.get_key_item() in [ItemID.ROBORIBBON, ItemID.MASAMUNE_2, ItemID.HERO_MEDAL]:
+                valid_key = False
+
+        if valid_key:
             if key_item == ItemID.MASAMUNE_2:
                 # Grand Leon and HeroMedal are special cases.  The name in the DB can be different
                 # depending on game mode or gear rando.  Always use "Grand Leon" for multiworld output.
@@ -107,18 +116,21 @@ def _get_location_data(settings: rset.Settings, config: cfg.RandoConfig) -> list
     """
     location_data = []
     logic_config = logicfactory.get_game_config(settings, config)
-    key_items = logic_config.get_key_item_list()
 
     # Add key item locations
     for location in config.key_item_locations:
-        # TODO - Location IDs need to be unique across worlds.  Need to figure this out.
         location_group = logic_config.get_location_group_from_location(location)
-        valid_key = location.get_key_item() in key_items
         # NOTE:
         # It is possible for some character specific items to be put in chronosanity locations in a
         # non-chronosanity Lost Worlds game.  This can cause location_group to come back as
         # None since the location isn't part of the logic config.  Skip these spots
         # so that critical items can't end up in unexpected locations.
+        valid_key = True
+        if settings.game_mode == rset.GameMode.LOST_WORLDS and \
+                rset.GameFlags.CHRONOSANITY not in settings.gameflags:
+            if location.get_key_item() in [ItemID.ROBORIBBON, ItemID.MASAMUNE_2, ItemID.HERO_MEDAL]:
+                valid_key = False
+
         if location_group is not None and valid_key:
             location_data.append({
                 "name": location.get_name(),
@@ -280,19 +292,60 @@ def _apply_melchior_flag_fix(ct_rom: ctrom.CTRom):
     script.insert_commands(new_flag_cmd.to_bytearray(), pos)
 
 
+def _add_victory_flag(ct_rom: ctrom.CTRom):
+    """
+    Add a flag to the ending selector screen so that we can easily track a victory condition.
+
+    :param ct_rom: ROM object to update
+    """
+    script = ct_rom.script_manager.get_script(
+        ctenums.LocID.ENDING_SELECTOR
+    )
+
+    # Add a flag at the beginning of the ending selector startup
+    explore_mode_off_cmd = EventCommand.set_explore_mode(False)
+    pos: Optional[int] = script.find_exact_command(explore_mode_off_cmd)
+
+    if pos is None:
+        raise CommandNotFoundException
+
+    pos = pos + len(explore_mode_off_cmd)
+    victory_flag_cmd = EventCommand.set_bit(0x7F0020, 0x01)
+    script.insert_commands(victory_flag_cmd.to_bytearray(), pos)
+
+
 def _apply_item_delivery_script_changes(ct_rom: ctrom.CTRom):
     """
     Apply the item delivery script to every location where we want the
-    player to be able to receive items.
+    player to be able to receive items.  Also zero out the received
+    items counter memory since it is initially filled with junk data.
 
     :param ct_rom: ROM data to modify
     """
 
     # These are the locations we don't want to be capable of delivering items.
-    location_exclusion_list = [LocID.LOAD_SCREEN, LocID.ENDING_SELECTOR]
+    # TODO: Guardia Forest 600 crashes (presumably due to too many objects).  We can either leave it
+    #       in the exclusion list or remove some of the unused objects (Frog flashback stuff).
+    #       If we remove objects, we'll need to make sure the tab and sealed chest object IDs are
+    #       updated elsewhere in the randomizer.
+    location_exclusion_list = [LocID.LOAD_SCREEN, LocID.ENDING_SELECTOR, LocID.GUARDIA_FOREST_600]
 
     ef = ctevent.EF
     ec = ctevent.EC
+
+    # Zero out the received items counter on the load screen (It's initially populated with junk data)
+    # There are several other memory locations being cleared out here, so add ours to the list
+    script = ct_rom.script_manager.get_script(ctenums.LocID.LOAD_SCREEN)
+
+    cmd = ec.assign_val_to_mem(0, 0x7F0057, 1)
+    pos = script.find_exact_command(cmd)
+
+    # Make sure we actually found the command
+    if pos is None:
+        raise CommandNotFoundException
+
+    pos += len(cmd)
+    script.insert_commands(ec.assign_val_to_mem(0, 0x7E287C, 1).to_bytearray(), pos)
 
     # loop through all locations to add the item receive loop
     # Skip location IDs in the exclusion list.
@@ -309,7 +362,7 @@ def _apply_item_delivery_script_changes(ct_rom: ctrom.CTRom):
 
         # TODO: Add a check for explore mode.  We don't want to toggle explore mode back on if it
         #       is off for a cut scene or other reason when this event fires.
-        # TODO: Increment received item counter (0x7E287D)?  Not in script memory.  How to do this?
+        # TODO: Increment received item counter (0x7E287C)?  Not in script memory.  How to do this?
         receive_function = ef()
         (
             receive_function
@@ -329,8 +382,8 @@ def _apply_item_delivery_script_changes(ct_rom: ctrom.CTRom):
                 .add(ec.assign_val_to_mem(0, 0x7F03E0, 1))
                 .add(ec.set_explore_mode(True))
                 .add(ec.generic_one_arg(0x87, 0x20))  # Back to slow mode
-                .jump_to_label(ec.jump_back(0), "item_receive_loop")
             )
+            .jump_to_label(ec.jump_back(0), "item_receive_loop")
         )
 
         new_obj_id = script.append_empty_object()
@@ -376,6 +429,7 @@ def apply_multiworld_changes(ct_rom: ctrom.CTRom, settings: rset.Settings, confi
     _apply_zombor_flag_fix(ct_rom)
     _apply_melchior_flag_fix(ct_rom)
     _apply_item_delivery_script_changes(ct_rom)
+    _add_victory_flag(ct_rom)
 
     # Replace all placed key items with APItems.
     # Skip items that are not part of the key item list for this LogicConfig.
@@ -427,7 +481,7 @@ def reserve_free_space(ct_rom: ctrom.CTRom, settings: rset.Settings):
     #if not space_manager.is_block_free(block):
     #    raise ValueError("Multiworld player data is not free space!")
 
-    data = bytearray(MULTIWORLD_ID_SIZE)
+    data = bytearray()
     data.extend("AP".encode('ascii'))
     data.extend(VERSION)
     name = settings.player_name
