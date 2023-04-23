@@ -97,7 +97,14 @@ def _get_access_rules(logic_rule: logictypes.LogicRule, config: cfg.RandoConfig)
         mw_req_list = []
         for requirement in rule:
             if requirement in ctenums.ItemID:
-                mw_req_list.append(config.itemdb[requirement].get_name_as_str(True))
+                # Handle Grand Leon and Hero Medal in their own cases.  Their names can
+                # change based on game mode or gear rando.
+                if requirement == ItemID.MASAMUNE_2:
+                    mw_req_list.append("Grand Leon")
+                elif requirement == ItemID.HERO_MEDAL:
+                    mw_req_list.append("Hero Medal")
+                else:
+                    mw_req_list.append(config.itemdb[requirement].get_name_as_str(True))
             else:
                 # Character requirement
                 mw_req_list.append(str(requirement))
@@ -443,7 +450,7 @@ def apply_multiworld_changes(ct_rom: ctrom.CTRom, settings: rset.Settings, confi
             location.write_key_item(config)
 
 
-def write_multiworld_to_config(settings: rset.Settings, config: cfg.RandoConfig):
+def create_archipelago_item(settings: rset.Settings, config: cfg.RandoConfig):
     """
     Apply multiworld changes to the game config.
 
@@ -458,10 +465,6 @@ def write_multiworld_to_config(settings: rset.Settings, config: cfg.RandoConfig)
     # Create an item to be used as a multiworld placeholder
     config.itemdb[ctenums.ItemID.APITEM].name = \
         ctstrings.CTNameString.from_string(' APItem', 0xB)
-
-    yaml_data = generate_yaml_ap_config(settings, config)
-    with open("multi_data.yaml", "w") as f:
-        f.write(yaml_data.getvalue())
 
 
 def reserve_free_space(ct_rom: ctrom.CTRom, settings: rset.Settings):
@@ -486,7 +489,7 @@ def reserve_free_space(ct_rom: ctrom.CTRom, settings: rset.Settings):
     data.extend(VERSION)
     name = settings.player_name
     if len(name) > PLAYER_NAME_SIZE:
-        name = name[0:16]
+        name = name[0:PLAYER_NAME_SIZE]
     data.extend(name.encode('ascii'))
 
     # write the ID information to the ROM

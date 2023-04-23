@@ -190,7 +190,7 @@ class Randomizer:
         bucketfragment.write_fragments_to_config(self.settings, self.config)
 
         # Archipelago (multiworld)
-        multiworld.write_multiworld_to_config(self.settings, self.config)
+        multiworld.create_archipelago_item(self.settings, self.config)
 
         # Omen elevator
         self.__update_key_item_descs()
