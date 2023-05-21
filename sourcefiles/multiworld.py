@@ -45,7 +45,6 @@ def _get_item_data(settings: rset.Settings, config: cfg.RandoConfig) -> list[dic
     :return: List of item data entries
     """
     item_data = []
-    logic_config = logicfactory.get_game_config(settings, config)
 
     # Items
     for location in config.key_item_locations:
@@ -73,11 +72,9 @@ def _get_item_data(settings: rset.Settings, config: cfg.RandoConfig) -> list[dic
             else:
                 item_name = config.itemdb[key_item].get_name_as_str(True)
 
-            # TODO: Count of 1 is ok for now until fragments are implemented
             item_data.append({
                 "name": item_name,
                 "id": key_item,
-                "count": 1,
                 "classification": "progression"
             })
 
@@ -139,9 +136,18 @@ def _get_location_data(settings: rset.Settings, config: cfg.RandoConfig) -> list
                 valid_key = False
 
         if location_group is not None and valid_key:
+            if location.get_treasure_id() == ctenums.TreasureID.PYRAMID_LEFT:
+                # In a non-multiworld game, both pyramid chests hold the same item and the player
+                # can only get one.  The pyramid location will return the ID of the left chest when
+                # queried for a treasure ID.  Use this to specify only the left chest in the yaml
+                # so that the right chest can be filled with some other junk fill item.
+                # Both will be honored by the client when one is collected.
+                loc_name = str(location.get_treasure_id())
+            else:
+                loc_name = location.get_name()
+
             location_data.append({
-                "name": location.get_name(),
-                "id": location.get_treasure_id(),
+                "name": loc_name,
                 "classification": "default",
             })
 
@@ -149,13 +155,8 @@ def _get_location_data(settings: rset.Settings, config: cfg.RandoConfig) -> list
     for recruit_spot in config.char_assign_dict.keys():
         logic_rule = logic_config.get_game().get_char_rule(recruit_spot)
         if logic_rule is not None:
-            # TODO - Location IDs are just the recruit spot ID + 0x100 so it doesn't collide with
-            #        normal location numbers.  Same as above, need to figure the unique part out.
-            # TODO: Actually, I don't think the ID is used for event locations.  Double check this
-            #       and nuke the ID if we don't need it.
             location_data.append({
                 "name": str(recruit_spot),
-                "id": int(recruit_spot) + 0x100,
                 "classification": "event",
                 "character": str(f"{config.char_assign_dict[recruit_spot].held_char}")
             })
@@ -186,12 +187,13 @@ def _get_victory_conditions(settings: rset.Settings, config: cfg.RandoConfig) ->
         rules.append([ItemID.BENT_HILT, ItemID.BENT_SWORD, ItemID.MASAMUNE_2,
                       CharID.FROG, CharID.MAGUS])
     elif settings.game_mode == rset.GameMode.ICE_AGE:
-        rules.append([ItemID.GATE_KEY, ItemID.DREAMSTONE, CharID.AYLA])
+        rule = [ItemID.GATE_KEY, ItemID.DREAMSTONE, CharID.AYLA]
         dactyl_recruit = config.char_assign_dict[RecruitID.DACTYL_NEST]
         if dactyl_recruit.held_char is not CharID.AYLA:
-            rules.append(dactyl_recruit.held_char)
+            rule.append(dactyl_recruit.held_char)
+        rules.append(rule)
 
-    # TODO: Bucket fragments
+    # TODO: Bucket fragments.  Just ignore bucket fragments as a go mode for now.
 
     # convert lists of keys/characters into strings.
     stringified_rules = []
@@ -199,7 +201,12 @@ def _get_victory_conditions(settings: rset.Settings, config: cfg.RandoConfig) ->
         temp = []
         for requirement in rule:
             if requirement in ItemID:
-                temp.append(config.itemdb[requirement].get_name_as_str(True))
+                if requirement == ItemID.MASAMUNE_2:
+                    temp.append("Grand Leon")
+                elif requirement == ItemID.HERO_MEDAL:
+                    temp.append("Hero Medal")
+                else:
+                    temp.append(config.itemdb[requirement].get_name_as_str(True))
             else:
                 temp.append(str(requirement))
         stringified_rules.append(temp)
@@ -221,7 +228,9 @@ def _get_location_access_rules(settings: rset.Settings, config: cfg.RandoConfig)
     # Key item locations
     for location in config.key_item_locations:
         location_group = logic_config.get_location_group_from_location(location)
-        rules[location.get_name()] = _get_access_rules(location_group.get_access_rule(), config)
+        # Filter out spots used for non-key items, i.e. Hero Medal in a Lost Worlds seed
+        if location_group is not None:
+            rules[location.get_name()] = _get_access_rules(location_group.get_access_rule(), config)
 
     # Character recruitment locations
     for recruit_spot in config.char_assign_dict.keys():
@@ -412,6 +421,11 @@ def generate_yaml_ap_config(settings: rset.Settings, config: cfg.RandoConfig) ->
         "game": "Chrono Trigger Jets of Time",
         "name": settings.player_name,
         "Chrono Trigger Jets of Time": {
+            "game_mode": str(settings.game_mode),
+            "item_difficulty": str(settings.item_difficulty),
+            "tab_treasures": rset.GameFlags.TAB_TREASURES in settings.gameflags,
+            "bucket_fragments": rset.GameFlags.BUCKET_FRAGMENTS in settings.gameflags,
+            "fragment_count": settings.bucket_settings.num_fragments,
             "items": _get_item_data(settings, config),
             "locations": _get_location_data(settings, config),
             "rules": _get_location_access_rules(settings, config),
@@ -438,16 +452,21 @@ def apply_multiworld_changes(ct_rom: ctrom.CTRom, settings: rset.Settings, confi
     _apply_item_delivery_script_changes(ct_rom)
     _add_victory_flag(ct_rom)
 
-    # Replace all placed key items with APItems.
-    # Skip items that are not part of the key item list for this LogicConfig.
-    # ie. Grand Leon or Hero Medal in a Lost Worlds game.
+    # Place APItems in every chronosanity location for this game mode
+    # even if the chosen game mode is not chronosanity.  The Archipelago
+    # implementation will only allow key items to be placed in the locations
+    # that were chosen for key items by the randomizer, but will place
+    # useful and junk fill items in all other chronosanity locations.
+    flags_backup = settings.gameflags
+    settings.gameflags |= rset.GameFlags.CHRONOSANITY
     logic_config = logicfactory.get_game_config(settings, config)
-    available_key_items = logic_config.get_key_item_list()
 
-    for location in config.key_item_locations:
-        if location.get_key_item() in available_key_items:
-            location.set_key_item(ctenums.ItemID.APITEM)
-            location.write_key_item(config)
+    for location_group in logic_config.get_locations():
+        for location in location_group.get_locations():
+            config.treasure_assign_dict[location.get_treasure_id()].held_item = ctenums.ItemID.APITEM
+
+    # Restore original flags
+    settings.gameflags = flags_backup
 
 
 def create_archipelago_item(settings: rset.Settings, config: cfg.RandoConfig):
@@ -456,7 +475,7 @@ def create_archipelago_item(settings: rset.Settings, config: cfg.RandoConfig):
 
     NOTE: This must be called after item placement has occurred.
 
-    :param settings: Settings object so we can check game flags
+    :param settings: Settings object so that we can check game flags
     :param config: Config object to update for multiworld
     """
     if rset.GameFlags.MULTIWORLD not in settings.gameflags:
@@ -476,12 +495,12 @@ def reserve_free_space(ct_rom: ctrom.CTRom, settings: rset.Settings):
     :param settings: Settings object
     :raises ValueError: When the multiworld player data address is not free space on the ROM
     """
-    block = (MULTIWORLD_ID_ADDRESS, MULTIWORLD_ID_SIZE)
-    space_manager = ct_rom.script_manager.fsrom.space_manager
+    # block = (MULTIWORLD_ID_ADDRESS, MULTIWORLD_ID_SIZE)
+    # space_manager = ct_rom.script_manager.fsrom.space_manager
 
     # Make sure that something else didn't sneak in and take our address!
     # TODO: Apparently this function doesn't work?
-    #if not space_manager.is_block_free(block):
+    # if not space_manager.is_block_free(block):
     #    raise ValueError("Multiworld player data is not free space!")
 
     data = bytearray()
