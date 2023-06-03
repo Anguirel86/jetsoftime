@@ -387,6 +387,13 @@ def _apply_item_delivery_script_changes(ct_rom: ctrom.CTRom):
             .set_label("item_receive_loop")
             .add(ec.assign_mem_to_mem(0x7E298A, 0x7F03E0, 1))
             .add_if(
+                # Check if saving is enabled.  If it is, don't run the loop.
+                # Players can get stuck on save points with the item delivery text preventing movement
+                # and the save point eating the A input to dismiss the text box.
+                ec.if_mem_op_value(0x7F01CF, Operation.BITWISE_AND_NONZERO, 0x80, 1, 00),
+                ef().jump_to_label(ec.jump_back(0), "item_receive_loop")
+            )
+            .add_if(
                 ec.if_mem_op_value(0x7F03E0, Operation.NOT_EQUALS, 0, 1, 0),
                 ef()
                 .add(ec.generic_one_arg(0x87, 0x04))  # Speed up processing while receiving an item
