@@ -379,13 +379,14 @@ def _apply_item_delivery_script_changes(ct_rom: ctrom.CTRom):
         # TODO: Add a check for explore mode.  We don't want to toggle explore mode back on if it
         #       is off for a cut scene or other reason when this event fires.
         # TODO: Increment received item counter (0x7E287C)?  Not in script memory.  How to do this?
+        #       This is currently being handled in the client.
         receive_function = ef()
         (
             receive_function
             .add(ec.return_cmd())
             .add(ec.generic_one_arg(0x87, 0x20))  # Set script speed slower to reduce potential lag
             .set_label("item_receive_loop")
-            .add(ec.assign_mem_to_mem(0x7E298A, 0x7F03E0, 1))
+            .add(ec.assign_mem_to_mem(0x7E287A, 0x7F03E0, 1))
             .add_if(
                 # Check if saving is enabled.  If it is, don't run the loop.
                 # Players can get stuck on save points with the item delivery text preventing movement
@@ -401,7 +402,7 @@ def _apply_item_delivery_script_changes(ct_rom: ctrom.CTRom):
                 .add(ec.assign_mem_to_mem(0x7F03E0, 0x7F0200, 1))
                 .add(ec.generic_one_arg(0xC7, 0x7F0200))  # Add Item to inventory from memory
                 .add(ec.text_box(item_rec_str_id, False))
-                .add(ec.assign_val_to_mem(0, 0x7E298A, 1))  # Reset the item delivery memory
+                .add(ec.assign_val_to_mem(0, 0x7E287A, 1))  # Reset the item delivery memory
                 .add(ec.assign_val_to_mem(0, 0x7F03E0, 1))
                 .add(ec.set_explore_mode(True))
                 .add(ec.generic_one_arg(0x87, 0x20))  # Back to slow mode
