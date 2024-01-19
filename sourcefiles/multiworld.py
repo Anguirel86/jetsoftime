@@ -414,7 +414,7 @@ def _apply_item_delivery_script_changes(ct_rom: ctrom.CTRom):
         script.set_function(new_obj_id, 0, receive_function)
 
 
-def generate_yaml_ap_config(settings: rset.Settings, config: cfg.RandoConfig) -> io.StringIO:
+def generate_yaml_ap_config(settings: rset.Settings, config: cfg.RandoConfig, extra_yaml_data: dict[str, str]) -> io.StringIO:
     """
     Generate the config file used by Archipelago to generate the multiworld.
 
@@ -423,23 +423,29 @@ def generate_yaml_ap_config(settings: rset.Settings, config: cfg.RandoConfig) ->
 
     :param settings: RandoSettings object with game settings
     :param config: RandoConfig object to pull config data from
+    :param extra_yaml_data: Additional fields to be added to the yaml
     :return: StringIO object with archipelago config as yaml
     """
     ap_cfg_dict = {
         "game": "Chrono Trigger Jets of Time",
-        "name": settings.player_name,
-        "Chrono Trigger Jets of Time": {
-            "game_mode": str(settings.game_mode),
-            "item_difficulty": str(settings.item_difficulty),
-            "tab_treasures": rset.GameFlags.TAB_TREASURES in settings.gameflags,
-            "bucket_fragments": rset.GameFlags.BUCKET_FRAGMENTS in settings.gameflags,
-            "fragment_count": settings.bucket_settings.num_fragments,
-            "items": _get_item_data(settings, config),
-            "locations": _get_location_data(settings, config),
-            "rules": _get_location_access_rules(settings, config),
-            "victory": _get_victory_conditions(settings, config)
-        }
+        "DO_NOT_CHANGE_PLAYER_NAME": "It is how the ROM and yaml get paired in AP right now",
+        "name": settings.player_name
     }
+    ap_cfg_dict.update(extra_yaml_data)
+    ap_cfg_dict.update(
+        {
+            "Chrono Trigger Jets of Time": {
+                "game_mode": str(settings.game_mode),
+                "item_difficulty": str(settings.item_difficulty),
+                "tab_treasures": rset.GameFlags.TAB_TREASURES in settings.gameflags,
+                "bucket_fragments": rset.GameFlags.BUCKET_FRAGMENTS in settings.gameflags,
+                "fragment_count": settings.bucket_settings.num_fragments,
+                "items": _get_item_data(settings, config),
+                "locations": _get_location_data(settings, config),
+                "rules": _get_location_access_rules(settings, config),
+                "victory": _get_victory_conditions(settings, config)
+            }
+        })
 
     ap_cfg_json = io.StringIO()
     json.dump(ap_cfg_dict, ap_cfg_json, indent=2)
