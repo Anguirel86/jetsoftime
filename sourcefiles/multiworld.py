@@ -282,13 +282,51 @@ def _get_regions(settings: rset.Settings, config: cfg.RandoConfig) -> dict[str, 
     return regions
 
 
+def _get_char_recruitment_locations(settings: rset.Settings, config: cfg.RandoConfig) -> list[dict[str, str]]:
+    """
+    Get character recruitment locations.
+
+    :param settings: RandoSettings object with game settings
+    :param config: RandoConfig object to pull config data from
+    :return: Dictionary of character recruitment locations
+    """
+    logic_config = logicfactory.get_game_config(settings, config)
+    location_data = []
+
+    for recruit_spot in config.char_assign_dict.keys():
+        logic_rule = logic_config.get_game().get_char_rule(recruit_spot)
+        if logic_rule is not None:
+            location_data.append({
+                "name": str(recruit_spot),
+                "classification": "event",
+                "character": str(f"{config.char_assign_dict[recruit_spot].held_char}")
+            })
+
+    return location_data
+
+
 def _get_region_access_rules(settings: rset.Settings, config: cfg.RandoConfig) -> dict[str, list[list[str]]]:
+    """
+    Get access rules for each of the regions.
+
+    :param settings: RandoSettings object with game settings
+    :param config: RandoConfig object to pull config data from
+    :return: Dictionary of region access rules
+    """
     logic_config = logicfactory.get_game_config(settings, config)
 
     rules = {}
 
+    # Access rules for each defined region (location group)
     for region in logic_config.get_locations():
         rules[region.get_name()] = _get_access_rules(region.get_access_rule(), config)
+
+    # Character recruitment locations
+    for recruit_spot in config.char_assign_dict.keys():
+        logic_rule = logic_config.get_game().get_char_rule(recruit_spot)
+        if logic_rule is not None:
+            # Skip unavailable locations (like Cathedral in Lost Worlds)
+            rules[str(recruit_spot)] = _get_access_rules(logic_rule, config)
 
     return rules
 
@@ -494,9 +532,10 @@ def generate_yaml_ap_config(
                 "fragment_count": settings.bucket_settings.num_fragments,
                 "items": _get_item_data(settings, config),
                 "regions": _get_regions(settings, config),
+                "char_locations": _get_char_recruitment_locations(settings, config),
                 "region_rules": _get_region_access_rules(settings, config),
-                "locations": _get_location_data(settings, config),
-                "rules": _get_location_access_rules(settings, config),
+                # "locations": _get_location_data(settings, config),
+                # "rules": _get_location_access_rules(settings, config),
                 "victory": _get_victory_conditions(settings, config)
             }
         })
