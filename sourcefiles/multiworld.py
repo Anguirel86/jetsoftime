@@ -254,7 +254,7 @@ def _get_location_access_rules(settings: rset.Settings, config: cfg.RandoConfig)
     return rules
 
 
-def _get_regions(settings: rset.Settings, config: cfg.RandoConfig) -> dict[str, list[list[str]]]:
+def _get_regions(settings: rset.Settings, config: cfg.RandoConfig) -> dict[str, list[str]]:
     """
     Get a dictionary of regions and associated location data
 
@@ -268,6 +268,7 @@ def _get_regions(settings: rset.Settings, config: cfg.RandoConfig) -> dict[str, 
 
     # Loop over all the regions (location groups) in the logic config
     for region in logic_config.get_locations():
+        regions[region.get_name()] = []
         # Add each location from the region to the list
         for location in region.get_locations():
             if location.get_treasure_id() == ctenums.TreasureID.PYRAMID_LEFT:
@@ -279,6 +280,17 @@ def _get_regions(settings: rset.Settings, config: cfg.RandoConfig) -> dict[str, 
                 regions[region.get_name()].append(location.get_name())
 
     return regions
+
+
+def _get_region_access_rules(settings: rset.Settings, config: cfg.RandoConfig) -> dict[str, list[list[str]]]:
+    logic_config = logicfactory.get_game_config(settings, config)
+
+    rules = {}
+
+    for region in logic_config.get_locations():
+        rules[region.get_name()] = _get_access_rules(region.get_access_rule(), config)
+
+    return rules
 
 
 def _apply_zombor_flag_fix(ct_rom: ctrom.CTRom):
@@ -482,6 +494,7 @@ def generate_yaml_ap_config(
                 "fragment_count": settings.bucket_settings.num_fragments,
                 "items": _get_item_data(settings, config),
                 "regions": _get_regions(settings, config),
+                "region_rules": _get_region_access_rules(settings, config),
                 "locations": _get_location_data(settings, config),
                 "rules": _get_location_access_rules(settings, config),
                 "victory": _get_victory_conditions(settings, config)
