@@ -26,10 +26,13 @@ class CommandNotFoundException(Exception):
 #   - 2 characters to glue an "AP" on the front
 #   - 3 bytes for version information
 #   - 11 bytes reserved in case we ever need it
-MULTIWORLD_ID_ADDRESS = 0x5E0000
+#
+# NOTE: The address must be within the first 4MB of the ROM in order to
+#       work with RetroArch.
+MULTIWORLD_ID_ADDRESS = 0x3F8C03
 MULTIWORLD_ID_SIZE = 32
 PLAYER_NAME_SIZE = 16
-VERSION = bytes([0, 0, 1])
+VERSION = bytes([0, 0, 2])
 
 
 def _get_item_data(settings: rset.Settings, config: cfg.RandoConfig) -> list[dict[str, str]]:
@@ -230,7 +233,16 @@ def _get_location_access_rules(settings: rset.Settings, config: cfg.RandoConfig)
         location_group = logic_config.get_location_group_from_location(location)
         # Filter out spots used for non-key items, i.e. Hero Medal in a Lost Worlds seed
         if location_group is not None:
-            rules[location.get_name()] = _get_access_rules(location_group.get_access_rule(), config)
+            if location.get_treasure_id() == ctenums.TreasureID.PYRAMID_LEFT:
+                # In a non-multiworld game, both pyramid chests hold the same item and the player
+                # can only get one.  The pyramid location will return the ID of the left chest when
+                # queried for a treasure ID.  Use this to specify only the left chest in the yaml
+                # so that the right chest can be filled with some other junk fill item.
+                # Both will be honored by the client when one is collected.
+                loc_name = str(location.get_treasure_id())
+            else:
+                loc_name = location.get_name()
+            rules[loc_name] = _get_access_rules(location_group.get_access_rule(), config)
 
     # Character recruitment locations
     for recruit_spot in config.char_assign_dict.keys():
@@ -414,7 +426,8 @@ def _apply_item_delivery_script_changes(ct_rom: ctrom.CTRom):
         script.set_function(new_obj_id, 0, receive_function)
 
 
-def generate_yaml_ap_config(settings: rset.Settings, config: cfg.RandoConfig, extra_yaml_data: dict[str, str]) -> io.StringIO:
+def generate_yaml_ap_config(
+        settings: rset.Settings, config: cfg.RandoConfig, extra_yaml_data: dict[str, str]) -> io.StringIO:
     """
     Generate the config file used by Archipelago to generate the multiworld.
 
