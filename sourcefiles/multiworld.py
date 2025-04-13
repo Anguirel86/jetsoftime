@@ -254,6 +254,33 @@ def _get_location_access_rules(settings: rset.Settings, config: cfg.RandoConfig)
     return rules
 
 
+def _get_regions(settings: rset.Settings, config: cfg.RandoConfig) -> dict[str, list[list[str]]]:
+    """
+    Get a dictionary of regions and associated location data
+
+    :param settings: RandoSettings object with game settings
+    :param config: RandoConfig object to pull config data from
+    :return: Dictionary of regions and associated locations
+    """
+    logic_config = logicfactory.get_game_config(settings, config)
+
+    regions = {}
+
+    # Loop over all the regions (location groups) in the logic config
+    for region in logic_config.get_locations():
+        # Add each location from the region to the list
+        for location in region.get_locations():
+            if location.get_treasure_id() == ctenums.TreasureID.PYRAMID_LEFT:
+                # If the location is the pyramid, add both left and right pyramid locations
+                regions[region.get_name()].append(str(ctenums.TreasureID.PYRAMID_LEFT))
+                regions[region.get_name()].append(str(ctenums.TreasureID.PYRAMID_RIGHT))
+                pass
+            else:
+                regions[region.get_name()].append(location.get_name())
+
+    return regions
+
+
 def _apply_zombor_flag_fix(ct_rom: ctrom.CTRom):
     """
     Move the flag that tracks the Zombor battle from before the battle
@@ -454,6 +481,7 @@ def generate_yaml_ap_config(
                 "bucket_fragments": rset.GameFlags.BUCKET_FRAGMENTS in settings.gameflags,
                 "fragment_count": settings.bucket_settings.num_fragments,
                 "items": _get_item_data(settings, config),
+                "regions": _get_regions(settings, config),
                 "locations": _get_location_data(settings, config),
                 "rules": _get_location_access_rules(settings, config),
                 "victory": _get_victory_conditions(settings, config)
