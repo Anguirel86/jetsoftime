@@ -531,9 +531,9 @@ def generate_yaml_ap_config(
                 "bucket_fragments": rset.GameFlags.BUCKET_FRAGMENTS in settings.gameflags,
                 "fragment_count": settings.bucket_settings.num_fragments,
                 "items": _get_item_data(settings, config),
-                "regions": _get_regions(settings, config),
+                "region_list": _get_regions(settings, config),
                 "char_locations": _get_char_recruitment_locations(settings, config),
-                "region_rules": _get_region_access_rules(settings, config),
+                "rules": _get_region_access_rules(settings, config),
                 # "locations": _get_location_data(settings, config),
                 # "rules": _get_location_access_rules(settings, config),
                 "victory": _get_victory_conditions(settings, config)
