@@ -256,7 +256,10 @@ def _get_location_access_rules(settings: rset.Settings, config: cfg.RandoConfig)
 
 def _get_regions(settings: rset.Settings, config: cfg.RandoConfig) -> dict[str, list[str]]:
     """
-    Get a dictionary of regions and associated location data
+    Get a dictionary of regions and associated location data.
+
+    The chronosanity logic configs will include treasure chest locations as well,
+    while the non-chronosanity configs will only include the standard KI locations.
 
     :param settings: RandoSettings object with game settings
     :param config: RandoConfig object to pull config data from
@@ -264,9 +267,8 @@ def _get_regions(settings: rset.Settings, config: cfg.RandoConfig) -> dict[str, 
     """
     logic_config = logicfactory.get_game_config(settings, config)
 
-    regions = {}
-
     # Loop over all the regions (location groups) in the logic config
+    regions = {}
     for region in logic_config.get_locations():
         regions[region.get_name()] = []
         # Add each location from the region to the list
@@ -617,6 +619,11 @@ def reserve_free_space(ct_rom: ctrom.CTRom, settings: rset.Settings):
     if len(name) > PLAYER_NAME_SIZE:
         name = name[0:PLAYER_NAME_SIZE]
     data.extend(name.encode('ascii'))
+
+    # Pad out the rest of the byte array with zeroes to clear
+    # out the old junk data in the player ID memory region
+    pad_size = MULTIWORLD_ID_SIZE - len(data)
+    data.extend(b'\x00'*pad_size)
 
     # write the ID information to the ROM
     ct_rom.rom_data.seek(MULTIWORLD_ID_ADDRESS)
