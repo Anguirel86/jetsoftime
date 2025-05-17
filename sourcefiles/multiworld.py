@@ -523,24 +523,28 @@ def generate_yaml_ap_config(
         "DO_NOT_CHANGE_PLAYER_NAME": "It is how the ROM and yaml get paired in AP right now",
         "name": settings.player_name
     }
-    ap_cfg_dict.update(extra_yaml_data)
-    ap_cfg_dict.update(
-        {
-            "Chrono Trigger Jets of Time": {
-                "game_mode": str(settings.game_mode),
-                "item_difficulty": str(settings.item_difficulty),
-                "tab_treasures": rset.GameFlags.TAB_TREASURES in settings.gameflags,
-                "bucket_fragments": rset.GameFlags.BUCKET_FRAGMENTS in settings.gameflags,
-                "fragment_count": settings.bucket_settings.num_fragments,
-                "items": _get_item_data(settings, config),
-                "region_list": _get_regions(settings, config),
-                "char_locations": _get_char_recruitment_locations(settings, config),
-                "rules": _get_region_access_rules(settings, config),
-                # "locations": _get_location_data(settings, config),
-                # "rules": _get_location_access_rules(settings, config),
-                "victory": _get_victory_conditions(settings, config)
-            }
-        })
+
+    # Build up the game specific data
+    game_section = {
+        "Chrono Trigger Jets of Time": {
+            "game_mode": str(settings.game_mode),
+            "item_difficulty": str(settings.item_difficulty),
+            "tab_treasures": rset.GameFlags.TAB_TREASURES in settings.gameflags,
+            "bucket_fragments": rset.GameFlags.BUCKET_FRAGMENTS in settings.gameflags,
+            "fragment_count": settings.bucket_settings.num_fragments,
+            "items": _get_item_data(settings, config),
+            "region_list": _get_regions(settings, config),
+            "char_locations": _get_char_recruitment_locations(settings, config),
+            "rules": _get_region_access_rules(settings, config),
+            "victory": _get_victory_conditions(settings, config)
+        }
+    }
+
+    # Add in any additional requested data
+    for k, v in extra_yaml_data.items():
+        game_section["Chrono Trigger Jets of Time"][k] = v
+
+    ap_cfg_dict.update(game_section)
 
     ap_cfg_json = io.StringIO()
     json.dump(ap_cfg_dict, ap_cfg_json, indent=2)
