@@ -1403,8 +1403,9 @@ class ChronosanityIceAgeLogicConfig(ChronosanityLogicConfig):
     def init_locations(self):
         ChronosanityLogicConfig.init_locations(self)
 
-        # For Chronosanity, just remove the Woe group.
+        # For Chronosanity, just remove the Woe group and Magic Cave
         self.location_groups.remove(self.get_location_group('Darkages'))
+        self.location_groups.remove(self.get_location_group('Magic Cave'))
 
 
 _awesome_gear_dist = td.TreasureDist(
